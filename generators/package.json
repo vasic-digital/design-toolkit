@@ -2,7 +2,7 @@
   "name": "@vasic-digital/design-toolkit-generators",
   "version": "0.1.0",
   "private": true,
-  "description": "Parametric uniqueness engine — seed → DTCG tokens/marks, feeding OpenDesign. License-verified deps (see ../submodules/PLAN.md §A and ../../_analysis/design-research/CATALOG.md).",
+  "description": "Parametric uniqueness engine \u2014 seed \u2192 DTCG tokens/marks, feeding OpenDesign. License-verified deps (see ../submodules/PLAN.md \u00a7A and ../../_analysis/design-research/CATALOG.md).",
   "type": "module",
   "engines": {
     "node": ">=20"
@@ -14,10 +14,18 @@
     "qa": "node ../qa/run-checks.mjs"
   },
   "dependencies": {
+    "@iconify/json": "^2",
     "@material/material-color-utilities": "^0.3.0",
+    "@phosphor-icons/core": "^2",
     "@svgdotjs/svg.js": "^3.2.4",
+    "@tabler/icons": "^3",
     "chroma-js": "^3.1.2",
     "colorjs.io": "^0.5.2",
+    "culori": "^4",
+    "lucide": "^1.30.0",
+    "motion": "^13.0.0",
+    "open-props": "^1.7.23",
+    "pagedjs": "^0.4",
     "style-dictionary": "^4.3.0",
     "svgdom": "0.1.19",
     "utopia-core": "^1.2.0"
@@ -25,5 +33,6 @@
   "optionalDependencies": {
     "@adobe/leonardo-contrast-colors": "^1.0.0"
   },
-  "//": "Preferred vendoring = these pinned deps (all permissive: Apache-2.0 / MIT / BSD-3 / ISC — verified 2026-08-06). Source-pinned git-submodule alternative is documented in ../submodules/PLAN.md §A. leonardo is the OSS lib, NOT the paid Adobe CC product."
+  "//": "Preferred vendoring = these pinned deps (all permissive: Apache-2.0 / MIT / BSD-3 / ISC \u2014 verified 2026-08-06). Source-pinned git-submodule alternative is documented in ../submodules/PLAN.md \u00a7A. leonardo is the OSS lib, NOT the paid Adobe CC product.",
+  "//deps": "2026-08-07 expansion \u2014 all permissive (MIT/ISC/Apache-2.0), license-verified: open-props (MIT) = breadth of ready-made design tokens (color/space/type/easing/shadow/gradient) complementing our seeded generator; culori (MIT) = fast, tree-shakeable color-space math (OKLCH/OKLAB/P3/Delta-E) alongside colorjs.io/chroma-js; motion (MIT, formerly Framer Motion / motion.dev) = the OSS motion engine we standardize on INSTEAD OF non-OSI GSAP; @iconify/json (MIT wrapper; individual sets keep their own permissive licenses) = the offline icon-data engine feeding the iconographer; lucide (ISC), @tabler/icons (MIT), @phosphor-icons/core (MIT) = concrete permissive icon sets on top of Iconify; pagedjs (MIT) = print / paged-media (CSS Paged Media polyfill) for PDF/print output. EXCLUDED (do not add): GSAP (non-OSI 'no-charge' license with redistribution/competitor restrictions \u2014 not OSS), tints.dev (fine as a hosted tool but we prefer local culori/chroma ramps), Animate.css (MIT but a prebuilt CSS grab-bag that undercuts the seeded/motion approach), Vivliostyle (AGPL-3.0 copyleft \u2014 kept out of the vendored tree; Paged.js is the MIT print path). Non-OSI/paid items are named here so nobody re-adds them."
 }

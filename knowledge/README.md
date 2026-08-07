@@ -23,6 +23,21 @@ agent should reason with* → an **authored** cheat-sheet of rules (never copied
 | [`motion.md`](motion.md) | MD3 motion tokens, easings table, reduced-motion gate | M3 Motion (open), easings.net (MIT), MDN |
 | [`material3.md`](material3.md) | M3 color roles, tonal palette, type scale, layout classes | Material Design 3 (Apache-2.0 / CC-BY-4.0) |
 | [`dtcg-tokens.md`](dtcg-tokens.md) | DTCG token document shape the generator emits | Design Tokens Community Group spec (open) |
+| [`uniqueness-engine.md`](uniqueness-engine.md) | Parametric uniqueness pipeline: seed→DNA→blue-noise→guardrails→DTCG; variance metrics; [E]/[H] tags | DTCG, MCU, Utopia, CIEDE2000, CAM16-UCS, Bridson, APCA |
+
+## Platform cheat-sheets (`platforms/`)
+Per-platform design language, key metrics (targets/type/spacing/safe-areas), a11y, canonical source
+URL. **UNVERIFIED / caveat flags are load-bearing — preserve verbatim.**
+
+| File | Covers | Primary sources (license) |
+|------|--------|---------------------------|
+| [`platforms/apple.md`](platforms/apple.md) | Liquid Glass (WWDC25, unified 26); iOS 44pt/16pt/17pt; watchOS/tvOS/visionOS; macOS min target UNVERIFIED | Apple HIG (copyright, free-to-read; metrics via Google-indexed text) |
+| [`platforms/android-material3.md`](platforms/android-material3.md) | M3 / Material You / M3 Expressive; 8dp grid, 48dp target; window size classes; type scale; Wear/TV/Auto-AAOS/Foldables | m3.material.io (Apache-2.0/CC-BY-4.0), developer.android.com |
+| [`platforms/windows-fluent.md`](platforms/windows-fluent.md) | Fluent 2, Segoe UI Variable, 40/44epx targets, radius 8/4/0, Mica/Acrylic/Smoke, UI Automation | Fluent 2 (copyright, free-to-read) |
+| [`platforms/linux-desktop.md`](platforms/linux-desktop.md) | GNOME HIG (libadwaita/GTK4) + KDE HIG (Kirigami gridUnit=18); AT-SPI/Orca; targets UNVERIFIED | GNOME HIG (CC-BY-SA, reference-only), KDE HIG |
+| [`platforms/web.md`](platforms/web.md) | Responsive (clamp/container queries/dvh), PWA manifest+icons, WCAG 2.2, HTML email | MDN (CC-BY-SA), W3C WCAG22, caniemail |
+| [`platforms/cross-platform.md`](platforms/cross-platform.md) | Flutter (M3 default, .adaptive), React Native (no DS, no target UNVERIFIED), .NET MAUI | Flutter / RN / MAUI docs |
+| [`platforms/specialized.md`](platforms/specialized.md) | Game UI/HUD (80% title-safe folklore UNVERIFIED), XR, Automotive/NHTSA, TUI, E-ink, Print, Data-viz, Brand | per-domain (Game/Xbox A11y, NHTSA, ECMA-48, ColorBrewer, Cleveland-McGill) |
 
 **Highest-leverage to internalize** (open × cross-platform value): WCAG 2.2 + WAI-ARIA APG (a11y
 gate + widget specs) · Material 3 (richest vendorable defaults) · DTCG (+ Style Dictionary) token

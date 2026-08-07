@@ -84,6 +84,60 @@ Pilot candidates map to `theming-designer` (coolors, token-bridge) and `design-q
 
 ---
 
+## 3b. Expansion (verified 2026-08-07) — additional FREE / OSS / no-key MCPs
+
+New capability breadth from the 2026-08-07 research pass. All are **FREE, no API key, MIT** unless a
+caveat is noted. Added **without removing** any §1–§3 entry. Re-verify low-star items before gating CI.
+
+```bash
+# Icon search/insertion across 200k+ icons (Iconify-backed) — empowers `iconographer`.
+claude mcp add better-icons -- npx -y better-icons                               # MIT
+
+# Local, editable hand-drawn wireframes/diagrams (no hosted endpoint needed) — `ux-flow-designer`.
+claude mcp add excalidraw -- npx -y mcp-excalidraw-server                        # MIT
+
+# Local image optimize/resize/convert (a Sharp superset: AVIF/WebP + LQIP) — `iconographer`.
+claude mcp add image-optimizer -- npx -y mcp-image-optimizer                     # MIT
+
+# Apple Human Interface Guidelines search + audit — `design-qa-auditor` / `layout-architect`.
+claude mcp add hig -- npx -y hig-mcp                                             # MIT
+
+# WCAG 2.2 success-criteria lookup for a11y audits — `design-qa-auditor`.
+# CAVEAT: MIT is declared on npm but the repo has NO LICENSE file — treat as external tool only.
+claude mcp add wcag -- npx -y wcag-guidelines-mcp                                # MIT-on-npm (no LICENSE file)
+
+# Design-systems knowledge (patterns/components/tokens), hosted HTTP — `layout-architect` / `theming-designer`.
+claude mcp add --transport http design-systems https://design-systems-mcp.southleft.com/mcp   # MIT
+
+# Tailwind utility / grid / flex guidance + class optimization — `layout-architect`.
+claude mcp add tailwindcss -- npx -y tailwindcss-mcp-server                      # MIT
+
+# Fast full-page screenshots for visual capture — `design-qa-auditor` / `animation-designer`.
+claude mcp add screenshot-fast -- npx -y @just-every/mcp-screenshot-website-fast # MIT
+
+# Chart/diagram generation (25+ chart types) — `ux-flow-designer` / `design-qa-auditor`.
+# CAVEAT: renders via AntV's HOSTED service by default; set VIS_REQUEST_SERVER to a self-hosted
+# renderer for fully offline/local use.
+claude mcp add antv-chart -- npx -y @antv/mcp-server-chart                       # MIT (hosted-render default)
+```
+
+**Agent mapping (Expansion):**
+- `iconographer` → better-icons, image-optimizer
+- `ux-flow-designer` → excalidraw, antv-chart
+- `design-qa-auditor` → hig, wcag, screenshot-fast, antv-chart
+- `layout-architect` → design-systems, tailwindcss, hig
+- `theming-designer` → design-systems
+
+**Submodule-candidates (build-from-source, not one-line `npx`):** these have no clean published-npx
+path, so vendor them as **submodules pinned to a reviewed SHA** (see `../submodules/PLAN.md`) rather
+than `claude mcp add`:
+- **daisyui-mcp** — MIT — daisyUI/Tailwind component guidance (build required).
+- **registry-directory-mcp** — MIT — shadcn-style registry directory browsing (build required).
+- **joenorton/comfyui-mcp-server** — Apache-2.0 — text-to-image via a **local ComfyUI**; needs your
+  own ComfyUI + models + GPU (nothing hosted). Local image-gen is only useful if you have the GPU.
+
+---
+
 ## 4. License note
 
 - **Vendored code** (submodules) must be MIT / Apache-2.0 / BSD / ISC. **MCP servers run as external
@@ -99,17 +153,29 @@ Pilot candidates map to `theming-designer` (coolors, token-bridge) and `design-q
 
 ## 5. Explicitly EXCLUDED (paid / hosted-gated / no-license)
 
-Do not install these — they fail the no-subscription or license bar (details in CATALOG.md):
+Do not install these — they fail the no-subscription or license bar (details in CATALOG.md).
+Refreshed 2026-08-07:
 
 | Excluded server | Why excluded |
 |-----------------|-------------|
 | **Official Figma Dev Mode MCP** | Requires a **paid Dev/Full seat**; free tier ~6 calls/mo (unusable); vendor states it will become usage-based paid. Use **Framelink** (free PAT) instead. |
+| **Apple UI / "Apple Design" MCP (paid)** | Commercial/subscription-gated Apple-UI server — fails the no-subscription bar. Use the FREE **hig-mcp** (MIT) instead. |
 | **21st.dev Magic MCP** | Requires a 21st.dev **API key**; README references **paid** code retrieval; free-tier limits undocumented; license unspecified. |
-| **LottieFiles Creator MCP** | Hosted product tied to a **LottieFiles account** (not free/local). Prefer CSS/SVG motion (`animation-designer`). |
-| **iconify-mcp (imjac0b)** | **GPL-3.0** — kept out to keep the toolkit uniformly permissive; use local Iconify *data* / `jezweb design-assets` via the `iconographer` agent. |
+| **LottieFiles Creator MCP** | Hosted product tied to a **LottieFiles account** (not free/local). Prefer CSS/SVG + `motion` (OSS) via `animation-designer`. |
+| **Paid cloud image APIs** (TinyPNG/remote optimizers, hosted bg-removal, cloud image-gen) | Require paid keys / send assets off-box. Use local **image-optimizer** / **sharp-mcp**, or local ComfyUI (your own GPU). |
+| **storybook-mcp-server** | **AGPL-3.0** copyleft — kept out to keep the toolkit uniformly permissive/redistributable. |
+| **iconify-mcp (imjac0b)** and other **GPL iconify servers** | **GPL-3.0** — kept out for uniform permissiveness; use **better-icons** (MIT) + local Iconify *data* via `iconographer`. |
 | **mcp-universal-icons (awssat)** | **NO LICENSE** (all-rights-reserved) — unsafe. |
-| **Osmansiddiquer/iconify-mcp**, **color-scheme-mcp (deepakkumardewani)** | No LICENSE file and/or abandoned (last push 2025). |
-| **agentic-ph/icon-mcp**, **Squoosh-based optimizers** | Stale/abandoned (>~12 months) — archival risk. |
+| **Osmansiddiquer/iconify-mcp**, **color-scheme-mcp (deepakkumardewani)**, other **no-LICENSE-file servers** | No LICENSE file (= all-rights-reserved) and/or abandoned (last push 2025) — unsafe to rely on. |
+| **agentic-ph/icon-mcp**, **archived puppeteer MCP**, **Squoosh-based optimizers** | Stale/abandoned/archived (>~12 months) — archival risk. |
+
+**Honest caveats on the FREE items we DID include (see §3b):**
+- **wcag-guidelines-mcp** and **material3-style servers** declare MIT on npm but ship **NO LICENSE
+  file** in the repo — usable as an external process, but do **not** vendor their source.
+- **@antv/mcp-server-chart** renders via AntV's **hosted service by default**; set
+  `VIS_REQUEST_SERVER` to a self-hosted renderer for fully offline use.
+- **Local image-generation** (ComfyUI-backed servers) needs **your own GPU + models** — there is no
+  free hosted path; skip it if you lack the hardware.
 
 ---
 

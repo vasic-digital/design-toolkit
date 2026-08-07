@@ -91,6 +91,115 @@ no license), `obra/superpowers` (not a design pack; and `superpowers-skills` is 
 
 ---
 
+## C-bis. Expansion additions (2026-08-07) — reference / full design-system repos
+
+**Optional** vendoring of full, permissively-licensed design systems and reference libraries to pin at
+a **reviewed SHA** — for offline pattern/token/component reference by the design agents. These are
+**reference material**, not runtime deps.
+
+> **npm-dep-preferred default:** where an item ships an npm package (Radix, Carbon, Fluent, PatternFly,
+> Paged.js, D3/Plot/Vega/ECharts/visx, Textual, react-three-fiber, A-Frame), pin it as an **npm dep**
+> (exact version + lockfile) rather than a submodule. Vendor as a submodule **only** when you need
+> source-level reference/patching (e.g. USWDS/GOV.UK design guidance, Charm Go TUI libs, MRTK).
+
+**Full design systems**
+
+| Repo | License | Role |
+|------|---------|------|
+| carbon-design-system/carbon | **Apache-2.0** | IBM enterprise system — tokens, components, a11y, data-viz reference. |
+| microsoft/fluentui | **MIT** | Microsoft Fluent — cross-platform component + token reference. |
+| patternfly/patternfly | **MIT** | Red Hat enterprise/admin-console patterns + tokens. |
+| uswds/uswds | **public domain (US-Gov / CC0-like)** | U.S. Web Design System — accessibility-first gov patterns. |
+| alphagov/govuk-frontend | **MIT** | GOV.UK Design System — plain, rigorously-tested accessible components. |
+
+**Headless / unstyled primitives (the "headless quartet" + friends)**
+
+| Repo | License | Role |
+|------|---------|------|
+| radix-ui/primitives | **MIT** | Accessible unstyled React primitives (a11y behavior reference). |
+| ariakit/ark (Ark UI) | **MIT** | Framework-agnostic headless components (React/Vue/Solid). |
+| mui/base-ui | **MIT** | Base UI — unstyled primitives from the MUI/Radix teams. |
+| tailwindlabs/headlessui | **MIT** | Headless UI — unstyled accessible components for React/Vue. |
+
+**TUI (terminal UI) breadth**
+
+| Repo | License | Role |
+|------|---------|------|
+| charmbracelet/lipgloss | **MIT** | Go terminal styling. |
+| charmbracelet/bubbletea | **MIT** | Go TUI framework (Elm-arch). |
+| Textualize/textual | **MIT** | Python TUI framework. |
+
+**XR / spatial breadth**
+
+| Repo | License | Role |
+|------|---------|------|
+| aframevr/aframe | **MIT** | Declarative WebXR/VR scenes. |
+| pmndrs/react-three-fiber | **MIT** | React renderer for three.js (3D/XR). |
+| microsoft/MixedRealityToolkit-Unity (MRTK) | **MIT** | Mixed-reality UX building blocks. |
+
+**Print / paged media**
+
+| Repo | License | Role |
+|------|---------|------|
+| pagedjs/pagedjs | **MIT** | CSS Paged Media polyfill — print/PDF layout (pairs with the `pagedjs` npm dep in §A). |
+
+**Data-visualization breadth**
+
+| Repo | License | Role |
+|------|---------|------|
+| d3/d3 | **ISC** | Low-level data-viz primitives. |
+| observablehq/plot | **ISC** | High-level grammar-of-graphics on top of D3. |
+| vega/vega (+ vega-lite) | **BSD-3-Clause** | Declarative visualization grammar. |
+| apache/echarts | **Apache-2.0** | Batteries-included charting. |
+| airbnb/visx | **MIT** | React + D3 low-level viz components. |
+
+```bash
+# Run from design-toolkit/ once it is its own git repo (next checkpoint). Pin each to a reviewed SHA.
+# Prefer npm deps where available (see note above); submodule commands shown for source-pinned reference.
+
+# Full design systems
+git submodule add https://github.com/carbon-design-system/carbon.git   knowledge/_vendor/carbon
+git submodule add https://github.com/microsoft/fluentui.git            knowledge/_vendor/fluentui
+git submodule add https://github.com/patternfly/patternfly.git         knowledge/_vendor/patternfly
+git submodule add https://github.com/uswds/uswds.git                   knowledge/_vendor/uswds
+git submodule add https://github.com/alphagov/govuk-frontend.git       knowledge/_vendor/govuk-frontend
+
+# Headless quartet
+git submodule add https://github.com/radix-ui/primitives.git           knowledge/_vendor/radix-primitives
+git submodule add https://github.com/chakra-ui/ark.git                 knowledge/_vendor/ark-ui
+git submodule add https://github.com/mui/base-ui.git                   knowledge/_vendor/base-ui
+git submodule add https://github.com/tailwindlabs/headlessui.git       knowledge/_vendor/headlessui
+
+# TUI
+git submodule add https://github.com/charmbracelet/lipgloss.git        knowledge/_vendor/lipgloss
+git submodule add https://github.com/charmbracelet/bubbletea.git       knowledge/_vendor/bubbletea
+git submodule add https://github.com/Textualize/textual.git            knowledge/_vendor/textual
+
+# XR
+git submodule add https://github.com/aframevr/aframe.git               knowledge/_vendor/aframe
+git submodule add https://github.com/pmndrs/react-three-fiber.git      knowledge/_vendor/react-three-fiber
+git submodule add https://github.com/microsoft/MixedRealityToolkit-Unity.git knowledge/_vendor/mrtk
+
+# Print / paged media
+git submodule add https://github.com/pagedjs/pagedjs.git               knowledge/_vendor/pagedjs
+
+# Data-viz
+git submodule add https://github.com/d3/d3.git                         knowledge/_vendor/d3
+git submodule add https://github.com/observablehq/plot.git             knowledge/_vendor/plot
+git submodule add https://github.com/vega/vega.git                     knowledge/_vendor/vega
+git submodule add https://github.com/apache/echarts.git                knowledge/_vendor/echarts
+git submodule add https://github.com/airbnb/visx.git                   knowledge/_vendor/visx
+# After each add, pin to a reviewed SHA:
+#   git -C knowledge/_vendor/<name> checkout <reviewed-sha> && git add knowledge/_vendor/<name>
+```
+
+**EXCLUDED (unchanged reasons apply):** GPL/AGPL and no-LICENSE items stay out of the vendored tree
+(see §A/§C and `../mcp/INSTALL.md` §5). Vivliostyle (AGPL-3.0) is **not** vendored — Paged.js (MIT)
+is the print path. Non-OSI/paid libs (GSAP, tints.dev-as-service, Animate.css, Every Layout paid
+content) are **not** vendored; only their freely-encodable concepts are.
+
+---
+
 ## D. How it nests under HelixConstitution
 
 Mirrors the existing "decouple then nest under constitution" plan (`project-vasic-monorepo`):
