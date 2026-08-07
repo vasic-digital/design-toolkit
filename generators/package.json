@@ -1,0 +1,24 @@
+{
+  "name": "@vasic-digital/design-toolkit-generators",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Parametric uniqueness engine — seed → DTCG tokens/marks, feeding OpenDesign. License-verified deps (see ../submodules/PLAN.md §A and ../../_analysis/design-research/CATALOG.md).",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "gen:tokens": "node gen-tokens.mjs",
+    "gen:marks": "node gen-marks.mjs"
+  },
+  "dependencies": {
+    "@material/material-color-utilities": "^0.3.0",
+    "colorjs.io": "^0.5.2",
+    "chroma-js": "^3.1.2",
+    "style-dictionary": "^4.3.0",
+    "utopia-core": "^1.2.0",
+    "@svgdotjs/svg.js": "^3.2.4"
+  },
+  "optionalDependencies": {
+    "@adobe/leonardo-contrast-colors": "^1.0.0"
+  },
+  "//": "Preferred vendoring = these pinned deps (all permissive: Apache-2.0 / MIT / BSD-3 / ISC — verified 2026-08-06). Source-pinned git-submodule alternative is documented in ../submodules/PLAN.md §A. leonardo is the OSS lib, NOT the paid Adobe CC product."
+}
