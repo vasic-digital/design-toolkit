@@ -43,9 +43,19 @@ const MCU_VARIANTS = {
 const VARIANT_NAMES = Object.keys(MCU_VARIANTS);
 const HARMONY_RULES = ["complementary", "analogous", "triadic", "split-complementary", "mono"];
 const TYPE_RATIOS = [1.2, 1.25, 1.333, 1.5];
-const SPACE_MULTIPLIERS = [0.85, 1.0, 1.25];
-const RADIUS_BASES = [0, 4, 8, 12, 999];
+// Exported (with the sets below) so QA's weighted-DNA-distance (U3) can normalize
+// each ordinal axis against its own bounded range instead of hard-coding it.
+export const SPACE_MULTIPLIERS = [0.85, 1.0, 1.25];
+export const RADIUS_BASES = [0, 4, 8, 12, 999];
 const CONTRAST_MODES = ["standard", "high", "premium-dark"];
+
+// Motion personality dial [H] (uniqueness-engine §3 "Motion [E/H]") — the M3
+// duration/easing base is established; this per-design speed multiplier is the
+// heuristic dial. Bounded set so the axis is comparable across seeds.
+export const MOTION_INTENSITIES = [0.85, 1.0, 1.15, 1.3];
+// Texture/depth dial [H] (uniqueness-engine §3 "Texture / depth") — elevation /
+// shadow / blur intensity. Level 0 is the mandatory flat/opaque fallback (§5).
+export const DEPTH_LEVELS = [0, 1, 2];
 
 // A small OSS/SIL-OFL font-pair matrix (typography.md §4). Self-hosted at emit;
 // never a runtime CDN request.
@@ -56,6 +66,24 @@ const FONT_PAIRS = [
   { id: "grotesque-enterprise", display: "Inter", body: "Inter", mono: "JetBrains Mono", adjectives: ["enterprise", "trustworthy"] },
   { id: "technical-mono", display: "Space Grotesk", body: "Inter", mono: "JetBrains Mono", adjectives: ["technical", "developer"] },
 ];
+
+// Type-classification vocabulary (one-hot dimensions) for the type-pair distance
+// feature space (U4). Kept small and orthogonal.
+export const TYPE_CLASSES = ["geometric-sans", "grotesque-sans", "humanist-sans", "serif"];
+
+// Per-face feature table [H] — approximate, published-metric-informed values for
+// the faces used above, normalized to [0,1]. `class` is one of TYPE_CLASSES;
+// xHeight = x-height/em, contrast = stroke-modulation, weight = default weight,
+// width = relative advance width, slant = obliqueness (0 = upright). These are a
+// heuristic per-face table (not authoritative foundry metrics) and drive the
+// U4 type-pair distance in qa/lib/typedna.mjs. Every face referenced by
+// FONT_PAIRS above MUST have an entry here.
+export const FACE_FEATURES = {
+  "Inter":           { class: "grotesque-sans", xHeight: 0.73, contrast: 0.08, weight: 0.40, width: 0.50, slant: 0.0 },
+  "Space Grotesk":   { class: "geometric-sans", xHeight: 0.69, contrast: 0.12, weight: 0.40, width: 0.46, slant: 0.0 },
+  "Instrument Sans": { class: "humanist-sans",  xHeight: 0.70, contrast: 0.15, weight: 0.40, width: 0.45, slant: 0.0 },
+  "Fraunces":        { class: "serif",          xHeight: 0.50, contrast: 0.85, weight: 0.40, width: 0.48, slant: 0.0 },
+};
 
 // contrastMode -> MCU contrast level (-1..1). standard=0, high/premium bump it.
 const CONTRAST_LEVEL = { standard: 0.0, high: 0.5, "premium-dark": 0.3 };
@@ -131,15 +159,25 @@ export function deriveVector(seed, opts = {}) {
   let spaceMultiplier = rng.pick(SPACE_MULTIPLIERS);
   let radiusBase = rng.pick(RADIUS_BASES);
   let contrastMode = rng.pick(CONTRAST_MODES);
-  let fontPair = rng.pick(FONT_PAIRS);
+  // Type identity draws from an INDEPENDENT hash word (words[2]) rather than the
+  // shared mulberry stream, so the type axis decorrelates from the color/shape
+  // axes — two seeds can share a hue neighborhood yet still land on distinct
+  // font pairings (and vice-versa). This is what gives U4 (type-pair distance)
+  // real, non-degenerate input across the default seed set.
+  let fontPair = FONT_PAIRS[rng.words[2] % FONT_PAIRS.length];
+  // Motion + depth personality dials (uniqueness-engine §3). Drawn from the same
+  // seeded stream that previously ended at fontPair, so earlier axes (hue,
+  // variant, harmony, typeRatio, space, radius, contrast) are byte-unchanged.
+  let motionIntensity = rng.pick(MOTION_INTENSITIES);
+  let depthLevel = rng.pick(DEPTH_LEVELS);
 
   // Adjective nudges (theming-designer.md heuristics) — deterministic overrides.
   const has = (w) => adjectives.includes(w);
   if (has("modern") || has("minimal")) { mcuVariant = "Neutral"; radiusBase = 8; typeRatio = 1.25; }
   if (has("enterprise") || has("trustworthy")) { mcuVariant = "TonalSpot"; radiusBase = 4; typeRatio = 1.25; }
-  if (has("playful")) { mcuVariant = "Expressive"; radiusBase = 999; typeRatio = 1.333; }
+  if (has("playful")) { mcuVariant = "Expressive"; radiusBase = 999; typeRatio = 1.333; motionIntensity = 1.3; depthLevel = 2; }
   if (has("editorial")) { mcuVariant = "Fidelity"; typeRatio = 1.5; }
-  if (has("technical") || has("developer")) { mcuVariant = "Monochrome"; radiusBase = 0; contrastMode = "high"; }
+  if (has("technical") || has("developer")) { mcuVariant = "Monochrome"; radiusBase = 0; contrastMode = "high"; motionIntensity = 0.85; depthLevel = 0; }
   const matched = FONT_PAIRS.find((p) => p.adjectives.some((a) => adjectives.includes(a)));
   if (matched) fontPair = matched;
 
@@ -155,6 +193,8 @@ export function deriveVector(seed, opts = {}) {
     contrastMode,
     fontPairId: fontPair.id,
     fontPair,
+    motionIntensity,
+    depthLevel,
     generatorVersion: GENERATOR_VERSION,
   };
 }
@@ -240,6 +280,29 @@ function buildSpaceScale(vector) {
   return tokens;
 }
 
+// M3-style base durations (ms) scaled by the seed's motion personality dial.
+// Emitted as DTCG `duration` tokens; a reduced-motion note lives in $description.
+function buildMotionGroup(vector) {
+  const base = { quick: 100, standard: 200, emphasized: 400 };
+  const g = { $type: "duration" };
+  for (const [name, ms] of Object.entries(base)) {
+    g[name] = { $value: { value: Math.round(ms * vector.motionIntensity), unit: "ms" } };
+  }
+  return g;
+}
+
+// Elevation/shadow intensity from the depth dial. Level 0 = flat fallback (§5):
+// zero blur / zero offset, i.e. the opaque/high-contrast baseline every effect
+// must ship. Emitted as DTCG `dimension` (px) tokens so it stays structurally valid.
+function buildElevationGroup(vector) {
+  const lvl = vector.depthLevel;
+  return {
+    $type: "dimension",
+    "shadow-blur": { $value: { value: lvl * 8, unit: "px" } },
+    "shadow-offset-y": { $value: { value: lvl * 2, unit: "px" } },
+  };
+}
+
 function colorGroup(schemes) {
   const toTokens = (map) => {
     const g = {};
@@ -271,7 +334,10 @@ export function generateTokens(seed, opts = {}) {
       `from seed="${vector.seed}" variant=${vector.mcuVariant} hue=${vector.seedHue} ` +
       `harmony=${vector.harmonyRule} typeRatio=${vector.typeRatio} ` +
       `space=${vector.spaceMultiplier} radius=${vector.radiusBase} ` +
-      `contrast=${vector.contrastMode} fontPair=${vector.fontPairId}. ` +
+      `contrast=${vector.contrastMode} fontPair=${vector.fontPairId} ` +
+      `motion=${vector.motionIntensity} depth=${vector.depthLevel}. ` +
+      `Motion tokens have a reduced-motion collapse (duration 0) counterpart; ` +
+      `elevation level 0 is the mandatory flat/opaque fallback. ` +
       `Deterministic: same seed+options+version => identical output.`,
     $extensions: {
       "digital.vasic.provenance": {
@@ -286,6 +352,8 @@ export function generateTokens(seed, opts = {}) {
           radiusBase: vector.radiusBase,
           contrastMode: vector.contrastMode,
           fontPairId: vector.fontPairId,
+          motionIntensity: vector.motionIntensity,
+          depthLevel: vector.depthLevel,
         },
         generatorVersion: GENERATOR_VERSION,
       },
@@ -294,7 +362,9 @@ export function generateTokens(seed, opts = {}) {
     dimension: {
       space: { $type: "dimension", ...buildSpaceScale(vector) },
       radius: dimensionTokens(radiusScale(vector.radiusBase)),
+      elevation: buildElevationGroup(vector),
     },
+    motion: buildMotionGroup(vector),
     typography: {
       "font-family": {
         $type: "fontFamily",

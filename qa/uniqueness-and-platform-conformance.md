@@ -18,12 +18,16 @@ carries an **`exec`** column: `RUN` (implemented + asserted in run-checks.mjs), 
 the design-qa-auditor MCP harness), or `SPEC` (defined here, **not yet executed — do not report PASS
 without building the runner first**). As of this writing, run-checks.mjs implements **D1 (DTCG
 validity), D2 (WCAG AA contrast), D7 (hue-delta), U1/D8 (min pairwise ΔE00 ≥10 on primaries),
-U2 (min pairwise CAM16-UCS ΔE′ ≥8 on primaries), A1b (APCA Lc — RUN but ADVISORY, never gates),
-and DET1 (determinism: same seed ⇒ byte-identical token + SVG-mark sha256)** with real assertions.
+U2 (min pairwise CAM16-UCS ΔE′ ≥8 on primaries), U3 (combined weighted DNA-distance ≥0.25 + color
+axis floor — GATING), U4 (type-pair distance ≥0.3 — GATING), U5 (Poisson-disk capacity — RUN but
+reported as a METRIC, never gates), A1b (APCA Lc — RUN but ADVISORY, never gates), and DET1
+(determinism: same seed ⇒ byte-identical token + SVG-mark sha256)** with real assertions.
 Real captured output for all of these lives at
 [`../evidence/qa-run-hardened-checks.txt`](../evidence/qa-run-hardened-checks.txt) (ΔE00, CAM16-UCS
-ΔE′, APCA Lc, and determinism hashes — no hardcoded numbers). Everything still marked `SPEC` here
-(U3, U4, U5, and the AUDITOR-side platform / rendered a11y checks) is unproven until its runner
+ΔE′, weighted DNA distance, type-pair distance, capacity, APCA Lc, and determinism hashes — no
+hardcoded numbers); the U3/U4/U5 slice plus its golden-BADs is also captured at
+[`../evidence/qa-uniqueness-extended.txt`](../evidence/qa-uniqueness-extended.txt). Everything still
+marked `SPEC` here (the AUDITOR-side platform / rendered a11y checks) is unproven until its runner
 exists. Do **not** claim any `SPEC` check passes.
 
 **Load-bearing caveats (carry verbatim, never launder):**
@@ -50,7 +54,7 @@ exists. Do **not** claim any `SPEC` check passes.
 
 | Challenge | Verifies | Runner |
 |-----------|----------|--------|
-| **C-UNIQ** — Uniqueness | ≥2 projects on the shared engine read as **distinct brands** in token space | run-checks.mjs (U1/D8 + U2) + SPEC (U3–U5) |
+| **C-UNIQ** — Uniqueness | ≥2 projects on the shared engine read as **distinct brands** in token space | run-checks.mjs (U1/D8 + U2 + U3 + U4 gating; U5 reported metric) |
 | **C-A11Y** — a11y HARD-FAIL | a per-project accessibility **floor** that fails the build the instant it is breached | run-checks.mjs (A1a gating + A1b APCA advisory, token-level) + AUDITOR (A1–A4 rendered) |
 | **C-PLAT** — Platform-conformance | native target-size / type-scale / safe-area / contrast per target platform | AUDITOR + SPEC (per `platforms/*`) |
 | **C-DET** — Determinism | same seed ⇒ **byte-identical** tokens (+ SVG mark) | run-checks.mjs (DET1) — see §5 |
@@ -66,9 +70,9 @@ on the resolved design-DNA / emitted tokens (not pixels — pixel-diff is D7 in 
 |---|-------|--------|-----------|-----|------|
 | **U1** | perceptual color separation | min pairwise **CIEDE2000 ΔE00** on primary role colors | **≥ 10** | metric **[E]**, threshold **[H]** | **RUN** (D8) |
 | **U2** | large-diff / gamut-aware separation | **CAM16-UCS ΔE′** on primaries (used where ΔE00 saturates) | **≥ 8** | metric **[E]**, threshold **[H]** | **RUN** (`qa/lib/cam16.mjs` — raw Euclidean CAM16-UCS ΔE′ via the pinned Google material-color-utilities `Cam16`, Li et al. 2017; checked both modes, min = worse mode; measured min ΔE′ **18.09** over the 3 default seeds ≫ 8) |
-| **U3** | overall DNA separation (blue-noise) | combined **weighted DNA-distance** (color>type>shape≈layout>spacing>motion≈texture, axes normalized [0,1]) — Poisson-disk min-radius invariant | **≥ 0.25** | method **[E]** (Bridson), r **[H]** | **SPEC** |
-| **U4** | type identity separation | **type-pair distance** (display+body pairing distance in the curated pool's feature space) | **≥ 0.3** | **[H]** | **SPEC** |
-| **U5** | capacity report | as space fills, radius shrank gracefully **or** saturation was reported (no infinite loop) | report present + honest | **[E]** method, **[H]** r | **SPEC** |
+| **U3** | overall DNA separation (blue-noise) | combined **weighted DNA-distance** D=sqrt(Σ wᵢ·d̂ᵢ²) over color 0.40/type 0.25/shape 0.12/layout 0.10/motion 0.08/depth 0.05 (axes normalized [0,1]) — Poisson-disk min-radius invariant, **AND** the color sub-distance must clear its own ΔE00 floor (no uniqueness via non-color tweaks alone) | **≥ 0.25** | method **[E]** (Bridson), r **[H]**, color-metric **[E]**, weights **[H]** | **RUN** (`qa/lib/dnadist.mjs` — real resolved DNA vectors + measured worst-mode ΔE00; measured min D **0.4447** over the 3 default seeds ≫ 0.25, color floor min ΔE00 **20.68** ≥ 10) |
+| **U4** | type identity separation | **type-pair distance** (display+body face-feature vector: class one-hot + normalized x-height/contrast/weight/width/slant, from the engine's own `FACE_FEATURES`) | **≥ 0.3** | **[H]** | **RUN** (`qa/lib/typedna.mjs` — measured min type distance **0.4284** over the 3 default seeds ≥ 0.3; identical font pair ⇒ 0) |
+| **U5** | capacity report | Poisson-disk packing upper-bound of the bounded DNA space at r = D_min: remaining capacity + saturation flag + graceful-degradation policy | report present + honest | **[E]** method, **[H]** r | **RUN — METRIC, NEVER GATES** (`qa/lib/dnadist.mjs` `poissonCapacityReport`; at the default seeds r=D_min **0.4447**, ≈3 max points, ≈0 remaining, saturated=true — honestly reported as an upper-bound estimate, loose in high dimension) |
 
 **Order of operations (uniqueness-engine §1):** the blue-noise gate (U1–U4) runs on the **raw DNA
 vector** for novelty; guardrail projection (C-A11Y) then repairs it for safety; **re-run U1–U4 after
@@ -167,8 +171,10 @@ A uniqueness/conformance suite is only trustworthy if a **deliberately broken** 
 
 ## 8. Gates (CI wiring — next checkpoint)
 
-- **CM-DESIGN-UNIQUENESS** (blocking when ≥2 projects share the engine): C-UNIQ **U1 + U2** PASS (both
-  RUN today); U3–U5 become blocking once their runners land.
+- **CM-DESIGN-UNIQUENESS** (blocking when ≥2 projects share the engine): C-UNIQ **U1 + U2 + U3 + U4**
+  PASS (all RUN + gating today in run-checks.mjs). **U5 is RUN but a reported METRIC — it never gates**
+  (capacity is informational; the graceful-degradation policy governs the generation loop, not the
+  build). Any U1–U4 FAIL blocks.
 - **CM-DESIGN-A11Y-FLOOR** (blocking): C-A11Y **A1a == 100%** (RUN token-level + AUDITOR rendered);
   A2–A4 blocking via the auditor harness. **A1b (APCA) is RUN but ADVISORY — it is measured and
   reported, but never gates (draft/secondary never gates alone).**
@@ -184,10 +190,10 @@ _tests/evidence/design-toolkit/<run-id>/
 ├── verdict.json                      # overall + per-check (§6 schema)
 ├── uniqueness/
 │   ├── deltae.json                   # U1 ΔE00 pairwise matrix (RUN)
-│   ├── cam16.json                    # U2 (SPEC)
-│   ├── dna-distance.json             # U3 (SPEC)
-│   ├── type-pair.json                # U4 (SPEC)
-│   └── capacity-report.json          # U5 (SPEC)
+│   ├── cam16.json                    # U2 (RUN)
+│   ├── dna-distance.json             # U3 (RUN, gating)
+│   ├── type-pair.json                # U4 (RUN, gating)
+│   └── capacity-report.json          # U5 (RUN, reported metric)
 ├── a11y/
 │   ├── contrast-table.json           # A1a per pair × mode (RUN + AUDITOR)
 │   ├── apca.json                     # A1b (SPEC, advisory)
@@ -205,10 +211,14 @@ _tests/evidence/design-toolkit/<run-id>/
 
 Dimensions, thresholds, `[E]/[H]` tags + caveats, mutations, and the evidence schema are defined.
 Executable **today** in [`run-checks.mjs`](run-checks.mjs) with real assertions and captured evidence
-([`../evidence/qa-run-hardened-checks.txt`](../evidence/qa-run-hardened-checks.txt)): **U1/D8 (ΔE00),
-U2 (CAM16-UCS ΔE′ via the pinned material-color-utilities), A1a (token-level WCAG AA contrast), A1b
-(APCA Lc — advisory), and DET1 (determinism)**; the base
-[`design-qa-testbank.md`](design-qa-testbank.md) covers the rendered D1–D7. Still **SPEC** (no runner
-yet): U3 weighted DNA-distance, U4 type-pair distance, U5 capacity report, and the AUDITOR-side
-platform + rendered a11y-floor assertions. Wiring the CM gates is a **next-checkpoint** task — **do not
-report a SPEC check as PASS until its runner exists.**
+([`../evidence/qa-run-hardened-checks.txt`](../evidence/qa-run-hardened-checks.txt) +
+[`../evidence/qa-uniqueness-extended.txt`](../evidence/qa-uniqueness-extended.txt)): **U1/D8 (ΔE00),
+U2 (CAM16-UCS ΔE′ via the pinned material-color-utilities), U3 (weighted DNA-distance ≥0.25 + color
+floor — gating), U4 (type-pair distance ≥0.3 — gating), U5 (Poisson-disk capacity — reported metric),
+A1a (token-level WCAG AA contrast), A1b (APCA Lc — advisory), and DET1 (determinism)**; the base
+[`design-qa-testbank.md`](design-qa-testbank.md) covers the rendered D1–D7. The U3/U4 golden-BADs are
+proven: a forced type-collision (two color-distinct seeds sharing a font pair) flips **U4** to FAIL
+with exit 1 while U1/U2/U3 stay PASS, and two identical seeds flip **U3** (and U4) to FAIL. Still
+**SPEC** (no runner yet): the AUDITOR-side platform + rendered a11y-floor assertions. Wiring the
+remaining CM gates is a **next-checkpoint** task — **do not report a SPEC check as PASS until its
+runner exists.**

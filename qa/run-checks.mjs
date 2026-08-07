@@ -8,9 +8,12 @@
 //   D7   cross-seed uniqueness variance (distinct primary OKLCH hues beyond a threshold)
 //   D8   cross-seed ΔE00 uniqueness     (U1: min pairwise CIEDE2000 on primaries >= 10)
 //   U2   cross-seed CAM16-UCS ΔE′       (min pairwise CAM16-UCS ΔE′ on primaries >= 8)
+//   U3   combined weighted DNA-distance (min pairwise D=sqrt(Σwᵢd̂ᵢ²) >= 0.25 AND color axis clears its ΔE00 floor)
+//   U4   type-pair distance             (min pairwise display+body face-feature distance >= 0.3)
 //   DET1 determinism                    (same seed twice -> byte-identical token + mark hash)
 // ADVISORY checks (RUN + measured, but NEVER gate — reported for information):
 //   A1b  APCA Lc                        (perceptual contrast; DRAFT/WCAG3, additional screen only)
+//   U5   Poisson-disk capacity report   (remaining blue-noise capacity at r=D_min; a METRIC, not a gate)
 //
 // Perceptual uniqueness rationale: hue delta (D7) is a cheap screen; two seeds
 // can share a hue while differing in tone/chroma or differ in hue while
@@ -20,8 +23,9 @@
 // CAM16-UCS ΔE′ is computed in qa/lib/cam16.mjs via the pinned Google
 // material-color-utilities Cam16 (Li et al. 2017); APCA Lc in qa/lib/apca.mjs
 // is a faithful APCA-W3 0.1.9 implementation (cross-validated vs apca-w3).
-// Still SPEC (no runner yet): U3 DNA-distance, U4 type-pair, U5 capacity, and
-// the AUDITOR-side platform / rendered a11y checks — see
+// U3 (DNA-distance), U4 (type-pair) are now RUN + gating; U5 (capacity) is RUN
+// but reported as a METRIC (never gates). Still SPEC (no runner yet): the
+// AUDITOR-side platform / rendered a11y checks — see
 // qa/uniqueness-and-platform-conformance.md.
 //
 // Usage:
@@ -44,6 +48,9 @@ import { generateMark } from "../generators/lib/marks.mjs";
 import { deltaE00, deltaEOK } from "./lib/deltae.mjs";
 import { deltaEPrimeCam16, deltaECam16 } from "./lib/cam16.mjs";
 import { apcaLc } from "./lib/apca.mjs";
+import { deriveVector } from "../generators/lib/tokens.mjs";
+import { typePairDistance } from "./lib/typedna.mjs";
+import { axisSubDistances, dnaDistance, DNA_WEIGHTS, COLOR_ANCHOR, poissonCapacityReport } from "./lib/dnadist.mjs";
 
 function parseArgs(argv) {
   const args = {
@@ -52,6 +59,8 @@ function parseArgs(argv) {
     hueThreshold: 15,
     de00Threshold: 10, // research U1 [E]: min pairwise ΔE00 on primaries
     cam16Threshold: 8, // research U2 [E]: min pairwise CAM16-UCS ΔE′ on primaries
+    dnaThreshold: 0.25, // U3 [H]: min pairwise weighted DNA distance (Poisson r)
+    typeThreshold: 0.3, // U4 [H]: min pairwise type-pair distance
   };
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
@@ -60,8 +69,10 @@ function parseArgs(argv) {
     else if (a === "--hue-threshold") args.hueThreshold = parseFloat(argv[++i]);
     else if (a === "--de00-threshold") args.de00Threshold = parseFloat(argv[++i]);
     else if (a === "--cam16-threshold") args.cam16Threshold = parseFloat(argv[++i]);
+    else if (a === "--dna-threshold") args.dnaThreshold = parseFloat(argv[++i]);
+    else if (a === "--type-threshold") args.typeThreshold = parseFloat(argv[++i]);
     else if (a === "--help" || a === "-h") {
-      process.stdout.write("Usage: node run-checks.mjs [--tokens tokens.json] [--seeds a,b,c] [--hue-threshold 15] [--de00-threshold 10] [--cam16-threshold 8]\n");
+      process.stdout.write("Usage: node run-checks.mjs [--tokens tokens.json] [--seeds a,b,c] [--hue-threshold 15] [--de00-threshold 10] [--cam16-threshold 8] [--dna-threshold 0.25] [--type-threshold 0.3]\n");
       process.exit(0);
     }
   }
@@ -239,6 +250,124 @@ dimensions.push({
 });
 log(`U2 uniqueness-CAM16-UCS ΔE′: ${cam16Pass ? "PASS" : "FAIL"} (min pairwise ΔE′ ${Math.round(minCam16 * 100) / 100} over ${args.seeds.length} seeds, threshold ${args.cam16Threshold})`);
 for (const p of cam16Pairs) log(`   - ${p.a} vs ${p.b}: ΔE′ light ${p.dEPrimeLight}, dark ${p.dEPrimeDark} (compressed ΔE ${p.dECompressedLight})`);
+
+// --- U3/U4/U5: resolved design-DNA vectors ----------------------------------
+// U3 (weighted DNA distance), U4 (type-pair distance), and U5 (Poisson-disk
+// capacity report) all operate on the engine's REAL resolved DNA vectors and the
+// already-measured perceptual color distance — not on mocks. The blue-noise gate
+// (uniqueness-engine §1) runs on the raw DNA vector; these are the token-level
+// executable slice of that gate.
+const dnaVectors = args.seeds.map((seed) => ({ seed, vector: deriveVector(seed) }));
+
+// --- U4: cross-seed type-pair distance --------------------------------------
+// U4 [H]: the min pairwise type-pair distance (display+body face pairing in the
+// curated pool's feature space, qa/lib/typedna.mjs) must be >= threshold (0.3).
+// Two projects assigned the SAME font pair score exactly 0 (golden-BAD) — so a
+// design cannot read as type-distinct without an actually different pairing.
+const typePairs = [];
+let minTypeDist = Infinity;
+for (let i = 0; i < dnaVectors.length; i++) {
+  for (let j = i + 1; j < dnaVectors.length; j++) {
+    const A = dnaVectors[i], B = dnaVectors[j];
+    const d = typePairDistance(A.vector.fontPair, B.vector.fontPair);
+    typePairs.push({
+      a: A.seed, b: B.seed,
+      aPair: A.vector.fontPairId, bPair: B.vector.fontPairId,
+      distance: Math.round(d * 10000) / 10000,
+    });
+    if (d < minTypeDist) minTypeDist = d;
+  }
+}
+const typePass = args.seeds.length >= 2 && minTypeDist >= args.typeThreshold;
+dimensions.push({
+  dimension: "U4-uniqueness-type-pair",
+  verdict: typePass ? "PASS" : "FAIL",
+  rationale: typePass
+    ? `${args.seeds.length} seeds produce type pairings separated by >= ${args.typeThreshold} in face-feature space (min ${Math.round(minTypeDist * 10000) / 10000})`
+    : `min pairwise type-pair distance ${Math.round(minTypeDist * 10000) / 10000} < ${args.typeThreshold} threshold (font pairing collision?)`,
+  measurements: {
+    metric: "type-pair distance (display+body face feature vector: class one-hot + normalized x-height/contrast/weight/width/slant; qa/lib/typedna.mjs)",
+    pairs: dnaVectors.map((d) => ({ seed: d.seed, fontPairId: d.vector.fontPairId, display: d.vector.fontPair.display, body: d.vector.fontPair.body })),
+    pairDistances: typePairs,
+    minTypeDistance: Math.round(minTypeDist * 10000) / 10000,
+    threshold: args.typeThreshold,
+  },
+  tags: ["[H]-metric", "[H]-threshold"],
+});
+log(`U4 uniqueness-type-pair: ${typePass ? "PASS" : "FAIL"} (min pairwise type distance ${Math.round(minTypeDist * 10000) / 10000} over ${args.seeds.length} seeds, threshold ${args.typeThreshold})`);
+for (const p of typePairs) log(`   - ${p.a}(${p.aPair}) vs ${p.b}(${p.bPair}): type distance ${p.distance}`);
+
+// --- U3: combined weighted DNA-distance (blue-noise / Poisson invariant) -----
+// U3: D(A,B) = sqrt(Σ wᵢ·d̂ᵢ²) over color/type/shape/layout/motion/depth
+// (weights color 0.40 > type 0.25 > shape 0.12 ≈ layout 0.10 > motion 0.08 ≈
+// depth 0.05). The color sub-distance uses the worse-of-modes ΔE00 measured
+// above. PASS requires BOTH: (a) min pairwise D >= dnaThreshold (0.25, the
+// Poisson-disk radius r [H]); AND (b) the color axis clears its own floor
+// (min worst-mode ΔE00 >= de00Threshold) so "uniqueness" can't be won by
+// non-color tweaks while primaries collide perceptually.
+const worstDe00 = {}; // "a|b" -> worse-of-modes ΔE00 (reuse the D8 pair math)
+for (const p of de00Pairs) worstDe00[`${p.a}|${p.b}`] = Math.min(p.de00Light, p.de00Dark);
+const dnaPairs = [];
+let minDna = Infinity;
+let minColorDe00 = Infinity;
+for (let i = 0; i < dnaVectors.length; i++) {
+  for (let j = i + 1; j < dnaVectors.length; j++) {
+    const A = dnaVectors[i], B = dnaVectors[j];
+    const cDe00 = worstDe00[`${A.seed}|${B.seed}`] ?? worstDe00[`${B.seed}|${A.seed}`] ?? 0;
+    const sub = axisSubDistances(A.vector, B.vector, cDe00);
+    const D = dnaDistance(sub);
+    dnaPairs.push({
+      a: A.seed, b: B.seed,
+      distance: Math.round(D * 10000) / 10000,
+      colorDeltaE00: Math.round(cDe00 * 100) / 100,
+      sub: Object.fromEntries(Object.entries(sub).map(([k, v]) => [k, Math.round(v * 10000) / 10000])),
+    });
+    if (D < minDna) minDna = D;
+    if (cDe00 < minColorDe00) minColorDe00 = cDe00;
+  }
+}
+const colorFloorPass = minColorDe00 >= args.de00Threshold;
+const dnaSepPass = minDna >= args.dnaThreshold;
+const dnaPass = args.seeds.length >= 2 && dnaSepPass && colorFloorPass;
+dimensions.push({
+  dimension: "U3-uniqueness-dna-distance",
+  verdict: dnaPass ? "PASS" : "FAIL",
+  rationale: dnaPass
+    ? `${args.seeds.length} seeds separated by weighted DNA distance >= ${args.dnaThreshold} (min ${Math.round(minDna * 10000) / 10000}) with the color axis clearing its own ΔE00 floor (min ${Math.round(minColorDe00 * 100) / 100} >= ${args.de00Threshold})`
+    : !dnaSepPass
+      ? `min pairwise weighted DNA distance ${Math.round(minDna * 10000) / 10000} < ${args.dnaThreshold} (Poisson-disk radius r)`
+      : `DNA separation met (${Math.round(minDna * 10000) / 10000}) but color axis floor breached: min worst-mode ΔE00 ${Math.round(minColorDe00 * 100) / 100} < ${args.de00Threshold} (can't be unique via non-color tweaks alone)`,
+  measurements: {
+    metric: "weighted DNA distance D = sqrt(Σ wᵢ·d̂ᵢ²); axes color/type/shape/layout/motion/depth",
+    weights: DNA_WEIGHTS,
+    colorAnchorDeltaE00: COLOR_ANCHOR,
+    pairDistances: dnaPairs,
+    minDnaDistance: Math.round(minDna * 10000) / 10000,
+    threshold: args.dnaThreshold,
+    colorFloor: { minWorstModeDeltaE00: Math.round(minColorDe00 * 100) / 100, floor: args.de00Threshold, pass: colorFloorPass },
+  },
+  tags: ["[E]-method", "[H]-r", "[E]-color-metric", "[H]-axis-weights"],
+  caveats: ["JND-non-uniform", "axis-normalization-heuristic"],
+});
+log(`U3 uniqueness-DNA-distance: ${dnaPass ? "PASS" : "FAIL"} (min weighted DNA distance ${Math.round(minDna * 10000) / 10000} over ${args.seeds.length} seeds, threshold ${args.dnaThreshold}; color floor min ΔE00 ${Math.round(minColorDe00 * 100) / 100} ${colorFloorPass ? ">=" : "<"} ${args.de00Threshold})`);
+for (const p of dnaPairs) log(`   - ${p.a} vs ${p.b}: D ${p.distance} (color ${p.sub.color}/ΔE00 ${p.colorDeltaE00}, type ${p.sub.type}, shape ${p.sub.shape}, layout ${p.sub.layout}, motion ${p.sub.motion}, depth ${p.sub.depth})`);
+
+// --- U5: Poisson-disk capacity report (METRIC only — never gates) ------------
+// U5 [E]-method/[H]-r: report remaining blue-noise capacity of the bounded DNA
+// space at r = D_min (the achieved min pairwise DNA distance). This is a REPORT,
+// not a pass/fail gate — as the space fills, r must shrink (graceful degradation)
+// or saturation must be reported; the engine must not loop forever (§4, Bridson).
+const capacity = poissonCapacityReport(Number.isFinite(minDna) ? minDna : 0, args.seeds.length);
+dimensions.push({
+  dimension: "U5-capacity-report",
+  advisory: true,
+  verdict: "REPORT",
+  rationale: `at r = D_min = ${capacity.radius_r_eq_Dmin} with ${capacity.acceptedCount} accepted designs, the bounded DNA space can hold ≈${capacity.estimatedMaxPoints} min-distance designs (≈${capacity.estimatedRemainingCapacity} remaining; saturated=${capacity.saturated})`,
+  measurements: capacity,
+  tags: ["[E]-method", "[H]-r"],
+  caveats: ["capacity-upper-bound-estimate", "curse-of-dimensionality", "report-not-gate"],
+});
+log(`U5 capacity-report (METRIC, non-gating): r=D_min ${capacity.radius_r_eq_Dmin}, accepted ${capacity.acceptedCount}, est. max ≈${capacity.estimatedMaxPoints}, remaining ≈${capacity.estimatedRemainingCapacity}, saturated=${capacity.saturated}`);
 
 // --- A1b: APCA Lc (ADVISORY — DRAFT/WCAG3, never gates) ----------------------
 // APCA is a DRAFT (WCAG 3, non-normative). This is an ADDITIONAL perceptual

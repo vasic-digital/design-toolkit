@@ -33,7 +33,7 @@ worst drift 0.00000 Lc
 exit=0
 
 ### 4. node qa/run-checks.mjs — human summary (stderr) ###
-D1 token-validity: PASS (103 tokens, 0 errors)
+D1 token-validity: PASS (108 tokens, 0 errors)
 D2 contrast: PASS (28 pairs; min text 4.65:1, min any 4.65:1)
 D7 uniqueness: PASS (min primary-hue delta 47.08 deg over 3 seeds)
    - vasic-digital: primary #683a00 oklchHue 63.14 deg (Rainbow)
@@ -47,6 +47,15 @@ U2 uniqueness-CAM16-UCS ΔE′: PASS (min pairwise ΔE′ 18.09 over 3 seeds, th
    - vasic-digital vs milosvasic: ΔE′ light 43.86, dark 40.97 (compressed ΔE 15.27)
    - vasic-digital vs helix: ΔE′ light 20.69, dark 18.09 (compressed ΔE 9.51)
    - milosvasic vs helix: ΔE′ light 45.76, dark 43.09 (compressed ΔE 15.68)
+U4 uniqueness-type-pair: PASS (min pairwise type distance 0.4284 over 3 seeds, threshold 0.3)
+   - vasic-digital(editorial-serif) vs milosvasic(humanist-warm): type distance 0.5694
+   - vasic-digital(editorial-serif) vs helix(geometric-modern): type distance 0.4284
+   - milosvasic(humanist-warm) vs helix(geometric-modern): type distance 0.5352
+U3 uniqueness-DNA-distance: PASS (min weighted DNA distance 0.4447 over 3 seeds, threshold 0.25; color floor min ΔE00 20.68 >= 10)
+   - vasic-digital vs milosvasic: D 0.7228 (color 1/ΔE00 41.11, type 0.5694, shape 0.25, layout 0.5, motion 0.3333, depth 0)
+   - vasic-digital vs helix: D 0.4447 (color 0.517/ΔE00 20.68, type 0.4284, shape 0.25, layout 0.5, motion 0, depth 0.5)
+   - milosvasic vs helix: D 0.7701 (color 1/ΔE00 46.98, type 0.5352, shape 0, layout 1, motion 0.3333, depth 0.5)
+U5 capacity-report (METRIC, non-gating): r=D_min 0.4447, accepted 3, est. max ≈3, remaining ≈0, saturated=true
 A1b APCA (ADVISORY, non-gating): PASS (84 pairs; 0 below role min; 5 primary-body pairs under the informational fluent-90 tier)
    - fluent-90 info: vasic-digital dark on-background/background = Lc 88.5 (< 90 fluent tier; >= 75 body min OK)
    - fluent-90 info: milosvasic dark on-surface/surface = Lc 88.6 (< 90 fluent tier; >= 75 body min OK)
@@ -54,15 +63,15 @@ A1b APCA (ADVISORY, non-gating): PASS (84 pairs; 0 below role min; 5 primary-bod
    - fluent-90 info: helix dark on-surface/surface = Lc 88.9 (< 90 fluent tier; >= 75 body min OK)
    - fluent-90 info: helix dark on-background/background = Lc 88.9 (< 90 fluent tier; >= 75 body min OK)
 DET1 determinism: PASS (same seed -> byte-identical token+mark hash, 3 seeds)
-   - vasic-digital: tokens b805c32f324d… (stable), mark a4dd75e76d14… (stable)
-   - milosvasic: tokens 3cf8215ccc6b… (stable), mark cccfb2ee0907… (stable)
-   - helix: tokens d3a287fb9361… (stable), mark 02394332bb13… (stable)
+   - vasic-digital: tokens f84e3374c33f… (stable), mark a4dd75e76d14… (stable)
+   - milosvasic: tokens 7bd97f8807fe… (stable), mark cccfb2ee0907… (stable)
+   - helix: tokens 13782f6caf70… (stable), mark 02394332bb13… (stable)
 
-OVERALL: PASS (advisory, not gated: A1b-apca=PASS)
+OVERALL: PASS (advisory, not gated: U5-capacity-report=REPORT, A1b-apca=PASS)
 exit=0
 
-### 5. golden-BAD mutation: --seeds helix,helix (U1/U2 MUST FAIL) ###
-D1 token-validity: PASS (103 tokens, 0 errors)
+### 5. golden-BAD mutation: --seeds helix,helix (U1/U2/U3/U4 MUST FAIL) ###
+D1 token-validity: PASS (108 tokens, 0 errors)
 D2 contrast: PASS (28 pairs; min text 5.51:1, min any 4.24:1)
 D7 uniqueness: FAIL (min primary-hue delta 0 deg over 2 seeds)
    - helix: primary #616219 oklchHue 110.21 deg (TonalSpot)
@@ -71,27 +80,38 @@ D8 uniqueness-ΔE00: FAIL (min pairwise ΔE00 0 over 2 seeds, threshold 10)
    - helix vs helix: ΔE00 light 0, dark 0
 U2 uniqueness-CAM16-UCS ΔE′: FAIL (min pairwise ΔE′ 0 over 2 seeds, threshold 8)
    - helix vs helix: ΔE′ light 0, dark 0 (compressed ΔE 0)
+U4 uniqueness-type-pair: FAIL (min pairwise type distance 0 over 2 seeds, threshold 0.3)
+   - helix(geometric-modern) vs helix(geometric-modern): type distance 0
+U3 uniqueness-DNA-distance: FAIL (min weighted DNA distance 0 over 2 seeds, threshold 0.25; color floor min ΔE00 0 < 10)
+   - helix vs helix: D 0 (color 0/ΔE00 0, type 0, shape 0, layout 0, motion 0, depth 0)
+U5 capacity-report (METRIC, non-gating): r=D_min 0, accepted 2, est. max ≈null, remaining ≈null, saturated=false
 A1b APCA (ADVISORY, non-gating): PASS (56 pairs; 0 below role min; 4 primary-body pairs under the informational fluent-90 tier)
    - fluent-90 info: helix dark on-surface/surface = Lc 88.9 (< 90 fluent tier; >= 75 body min OK)
    - fluent-90 info: helix dark on-background/background = Lc 88.9 (< 90 fluent tier; >= 75 body min OK)
    - fluent-90 info: helix dark on-surface/surface = Lc 88.9 (< 90 fluent tier; >= 75 body min OK)
    - fluent-90 info: helix dark on-background/background = Lc 88.9 (< 90 fluent tier; >= 75 body min OK)
 DET1 determinism: PASS (same seed -> byte-identical token+mark hash, 2 seeds)
-   - helix: tokens d3a287fb9361… (stable), mark 02394332bb13… (stable)
-   - helix: tokens d3a287fb9361… (stable), mark 02394332bb13… (stable)
+   - helix: tokens 13782f6caf70… (stable), mark 02394332bb13… (stable)
+   - helix: tokens 13782f6caf70… (stable), mark 02394332bb13… (stable)
 
-OVERALL: FAIL (advisory, not gated: A1b-apca=PASS)
-exit=1 (non-zero expected)
+OVERALL: FAIL (advisory, not gated: U5-capacity-report=REPORT, A1b-apca=PASS)
+exit=1
 
 ### 6. generators npm test (determinism + gates) ###
-# tests 7
-# suites 0
-# pass 7
+ok 1 - determinism: same seed => byte-identical token document
+ok 2 - determinism: same seed => identical resolved vector
+ok 3 - determinism: same seed => byte-identical SVG mark
+ok 4 - DTCG validity: every generated document is structurally valid
+ok 5 - contrast gate: all semantic pairs clear WCAG threshold in light+dark
+ok 6 - uniqueness: distinct seeds produce distinct primary hues (>=15 deg)
+ok 7 - uniqueness: different seeds differ in the design-DNA vector
+ok 8 - determinism: motion + depth axes are stable per seed
+ok 9 - U4: distinct seeds produce distinct type pairings (>=0.3), identical seed => 0
+ok 10 - U3: weighted DNA distance >=0.25 across seeds; identical seed => 0
+# tests 10
+# pass 10
 # fail 0
-# cancelled 0
-# skipped 0
-# todo 0
-# duration_ms 399.345917
+exit=0
 
 ### 7. machine-readable verdict JSON (node qa/run-checks.mjs, stdout) ###
 {
@@ -105,18 +125,21 @@ exit=1 (non-zero expected)
     "D7-uniqueness",
     "D8-uniqueness-deltaE00",
     "U2-uniqueness-cam16ucs",
+    "U4-uniqueness-type-pair",
+    "U3-uniqueness-dna-distance",
     "DET1-determinism"
   ],
   "advisoryDimensions": [
+    "U5-capacity-report",
     "A1b-apca"
   ],
   "dimensions": [
     {
       "dimension": "D1-token-validity",
       "verdict": "PASS",
-      "rationale": "103 tokens are structurally valid DTCG",
+      "rationale": "108 tokens are structurally valid DTCG",
       "measurements": {
-        "tokenCount": 103,
+        "tokenCount": 108,
         "errorCount": 0
       },
       "errors": []
@@ -283,6 +306,168 @@ exit=1 (non-zero expected)
       ],
       "caveats": [
         "JND-non-uniform"
+      ]
+    },
+    {
+      "dimension": "U4-uniqueness-type-pair",
+      "verdict": "PASS",
+      "rationale": "3 seeds produce type pairings separated by >= 0.3 in face-feature space (min 0.4284)",
+      "measurements": {
+        "metric": "type-pair distance (display+body face feature vector: class one-hot + normalized x-height/contrast/weight/width/slant; qa/lib/typedna.mjs)",
+        "pairs": [
+          {
+            "seed": "vasic-digital",
+            "fontPairId": "editorial-serif",
+            "display": "Fraunces",
+            "body": "Inter"
+          },
+          {
+            "seed": "milosvasic",
+            "fontPairId": "humanist-warm",
+            "display": "Instrument Sans",
+            "body": "Instrument Sans"
+          },
+          {
+            "seed": "helix",
+            "fontPairId": "geometric-modern",
+            "display": "Space Grotesk",
+            "body": "Inter"
+          }
+        ],
+        "pairDistances": [
+          {
+            "a": "vasic-digital",
+            "b": "milosvasic",
+            "aPair": "editorial-serif",
+            "bPair": "humanist-warm",
+            "distance": 0.5694
+          },
+          {
+            "a": "vasic-digital",
+            "b": "helix",
+            "aPair": "editorial-serif",
+            "bPair": "geometric-modern",
+            "distance": 0.4284
+          },
+          {
+            "a": "milosvasic",
+            "b": "helix",
+            "aPair": "humanist-warm",
+            "bPair": "geometric-modern",
+            "distance": 0.5352
+          }
+        ],
+        "minTypeDistance": 0.4284,
+        "threshold": 0.3
+      },
+      "tags": [
+        "[H]-metric",
+        "[H]-threshold"
+      ]
+    },
+    {
+      "dimension": "U3-uniqueness-dna-distance",
+      "verdict": "PASS",
+      "rationale": "3 seeds separated by weighted DNA distance >= 0.25 (min 0.4447) with the color axis clearing its own ΔE00 floor (min 20.68 >= 10)",
+      "measurements": {
+        "metric": "weighted DNA distance D = sqrt(Σ wᵢ·d̂ᵢ²); axes color/type/shape/layout/motion/depth",
+        "weights": {
+          "color": 0.4,
+          "type": 0.25,
+          "shape": 0.12,
+          "layout": 0.1,
+          "motion": 0.08,
+          "depth": 0.05
+        },
+        "colorAnchorDeltaE00": 40,
+        "pairDistances": [
+          {
+            "a": "vasic-digital",
+            "b": "milosvasic",
+            "distance": 0.7228,
+            "colorDeltaE00": 41.11,
+            "sub": {
+              "color": 1,
+              "type": 0.5694,
+              "shape": 0.25,
+              "layout": 0.5,
+              "motion": 0.3333,
+              "depth": 0
+            }
+          },
+          {
+            "a": "vasic-digital",
+            "b": "helix",
+            "distance": 0.4447,
+            "colorDeltaE00": 20.68,
+            "sub": {
+              "color": 0.517,
+              "type": 0.4284,
+              "shape": 0.25,
+              "layout": 0.5,
+              "motion": 0,
+              "depth": 0.5
+            }
+          },
+          {
+            "a": "milosvasic",
+            "b": "helix",
+            "distance": 0.7701,
+            "colorDeltaE00": 46.98,
+            "sub": {
+              "color": 1,
+              "type": 0.5352,
+              "shape": 0,
+              "layout": 1,
+              "motion": 0.3333,
+              "depth": 0.5
+            }
+          }
+        ],
+        "minDnaDistance": 0.4447,
+        "threshold": 0.25,
+        "colorFloor": {
+          "minWorstModeDeltaE00": 20.68,
+          "floor": 10,
+          "pass": true
+        }
+      },
+      "tags": [
+        "[E]-method",
+        "[H]-r",
+        "[E]-color-metric",
+        "[H]-axis-weights"
+      ],
+      "caveats": [
+        "JND-non-uniform",
+        "axis-normalization-heuristic"
+      ]
+    },
+    {
+      "dimension": "U5-capacity-report",
+      "advisory": true,
+      "verdict": "REPORT",
+      "rationale": "at r = D_min = 0.4447 with 3 accepted designs, the bounded DNA space can hold ≈3 min-distance designs (≈0 remaining; saturated=true)",
+      "measurements": {
+        "metric": "Poisson-disk packing upper-bound (Bridson 2007) in weighted DNA space",
+        "dimensions": 6,
+        "radius_r_eq_Dmin": 0.4447,
+        "acceptedCount": 3,
+        "boxVolume": 0.002191,
+        "estimatedMaxPoints": 3,
+        "estimatedRemainingCapacity": 0,
+        "saturated": true,
+        "gracefulDegradationPolicy": "if remaining ≤ 0 the engine MUST shrink r (graceful degradation) or report saturation — never loop forever (uniqueness-engine §4, Bridson 2007)",
+        "caveat": "upper-bound packing estimate; loose in high dimension (curse of dimensionality). REPORT-only, never a pass/fail gate."
+      },
+      "tags": [
+        "[E]-method",
+        "[H]-r"
+      ],
+      "caveats": [
+        "capacity-upper-bound-estimate",
+        "curse-of-dimensionality",
+        "report-not-gate"
       ]
     },
     {
@@ -1205,21 +1390,21 @@ exit=1 (non-zero expected)
         "runs": [
           {
             "seed": "vasic-digital",
-            "tokensSha256": "b805c32f324d4ca11a9514155f4628444288acf30143ab7619508c558a435058",
+            "tokensSha256": "f84e3374c33f4a8c987401b2528b220d752453f2a2b0e8cbf7d6109e3b6585a4",
             "tokensStable": true,
             "markSha256": "a4dd75e76d14cfcb0723595db327425556781391ffa153217f939d037fb52b0b",
             "markStable": true
           },
           {
             "seed": "milosvasic",
-            "tokensSha256": "3cf8215ccc6b6275750f84662553937f471dde26ad160cc266ba247eadd52c99",
+            "tokensSha256": "7bd97f8807fe4ff42b0142d5581961e2ad9f68c9b3cf7da33d4d8f5d53362e90",
             "tokensStable": true,
             "markSha256": "cccfb2ee0907ac48b8003753809d5638b1b5139ee90eda098563847b455ace03",
             "markStable": true
           },
           {
             "seed": "helix",
-            "tokensSha256": "d3a287fb9361b9c14befb133c50eb6dede2685e2e35aa6ca63b580e430e9c03d",
+            "tokensSha256": "13782f6caf707f7309131e54655d53257c7332ca344f53b493aa54f0e9f167cd",
             "tokensStable": true,
             "markSha256": "02394332bb13bfcc9d3a48026740806be6cfc06c98c40c2389a8b301f998d8a8",
             "markStable": true
