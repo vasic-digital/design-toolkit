@@ -1,0 +1,8 @@
+wrote ../evidence/marks/vasic-digital.mark.svg
+seed="vasic-digital" kind=mark size=512 palette=#683a00,#57412b,#404922,#aa6305,#6f794d
+wrote ../evidence/marks/vasic-digital.background.svg
+seed="vasic-digital" kind=background size=800 palette=#683a00,#57412b,#404922,#aa6305,#6f794d
+wrote ../evidence/marks/helix.mark.svg
+seed="helix" kind=mark size=512 palette=#616219,#606043,#3d6657,#e7e790,#bfecd9
+wrote ../evidence/marks/helix.background.svg
+seed="helix" kind=background size=800 palette=#616219,#606043,#3d6657,#e7e790,#bfecd9

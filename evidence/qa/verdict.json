@@ -1,0 +1,75 @@
+{
+  "feature_class": "design_qa",
+  "target": "../evidence/tokens/vasic-digital.tokens.json",
+  "generatedAt_omitted_for_determinism": true,
+  "overall": "PASS",
+  "dimensions": [
+    {
+      "dimension": "D1-token-validity",
+      "verdict": "PASS",
+      "rationale": "103 tokens are structurally valid DTCG",
+      "measurements": {
+        "tokenCount": 103,
+        "errorCount": 0
+      },
+      "errors": []
+    },
+    {
+      "dimension": "D2-contrast",
+      "verdict": "PASS",
+      "rationale": "all 28 semantic pairs clear their WCAG threshold in both modes",
+      "measurements": {
+        "pairsChecked": 28,
+        "minTextRatio": 4.65,
+        "minAnyRatio": 4.65
+      },
+      "failures": []
+    },
+    {
+      "dimension": "D7-uniqueness",
+      "verdict": "PASS",
+      "rationale": "3 seeds produce primary hues separated by >= 15 deg (min 47.08 deg)",
+      "measurements": {
+        "seeds": [
+          {
+            "seed": "vasic-digital",
+            "primary": "#683a00",
+            "oklchHue": 63.14,
+            "variant": "Rainbow"
+          },
+          {
+            "seed": "milosvasic",
+            "primary": "#585799",
+            "oklchHue": 282.53,
+            "variant": "Expressive"
+          },
+          {
+            "seed": "helix",
+            "primary": "#616219",
+            "oklchHue": 110.21,
+            "variant": "TonalSpot"
+          }
+        ],
+        "pairDeltas": [
+          {
+            "a": "vasic-digital",
+            "b": "milosvasic",
+            "delta": 140.61
+          },
+          {
+            "a": "vasic-digital",
+            "b": "helix",
+            "delta": 47.08
+          },
+          {
+            "a": "milosvasic",
+            "b": "helix",
+            "delta": 172.31
+          }
+        ],
+        "minHueDelta": 47.08,
+        "threshold": 15
+      }
+    }
+  ]
+}

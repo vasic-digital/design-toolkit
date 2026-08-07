@@ -1,0 +1,14 @@
+=== mark files ===
+total 64
+drwxr-xr-x@ 2 milosvasic  staff   272 Aug  7 12:33 .
+drwxr-xr-x@ 5 milosvasic  staff   204 Aug  7 12:33 ..
+-rw-r--r--@ 1 milosvasic  staff   532 Aug  7 12:33 gen-marks.log
+-rw-r--r--@ 1 milosvasic  staff  5840 Aug  7 12:33 helix.background.svg
+-rw-r--r--@ 1 milosvasic  staff  1572 Aug  7 12:33 helix.mark.svg
+-rw-r--r--@ 1 milosvasic  staff    19 Aug  7 12:33 marks-summary.txt
+-rw-r--r--@ 1 milosvasic  staff  4825 Aug  7 12:33 vasic-digital.background.svg
+-rw-r--r--@ 1 milosvasic  staff  1833 Aug  7 12:33 vasic-digital.mark.svg
+
+=== DETERMINISM: sha256 of SVG mark, same seed twice ===
+vasic-digital    23c7e0b692cb0c4a6e3ed474f3dbefcf1bb855e2291012933c71ca7ba7a76ee9 (run1==run2: IDENTICAL)
+helix            5ad557d3d1139ac00b864555613ad96c5158a793d6db5596a1b84c901f6ab160 (run1==run2: IDENTICAL)

@@ -4,18 +4,23 @@
   "private": true,
   "description": "Parametric uniqueness engine — seed → DTCG tokens/marks, feeding OpenDesign. License-verified deps (see ../submodules/PLAN.md §A and ../../_analysis/design-research/CATALOG.md).",
   "type": "module",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "gen:tokens": "node gen-tokens.mjs",
-    "gen:marks": "node gen-marks.mjs"
+    "gen:marks": "node gen-marks.mjs",
+    "test": "node --test",
+    "qa": "node ../qa/run-checks.mjs"
   },
   "dependencies": {
     "@material/material-color-utilities": "^0.3.0",
-    "colorjs.io": "^0.5.2",
+    "@svgdotjs/svg.js": "^3.2.4",
     "chroma-js": "^3.1.2",
+    "colorjs.io": "^0.5.2",
     "style-dictionary": "^4.3.0",
-    "utopia-core": "^1.2.0",
-    "@svgdotjs/svg.js": "^3.2.4"
+    "svgdom": "0.1.19",
+    "utopia-core": "^1.2.0"
   },
   "optionalDependencies": {
     "@adobe/leonardo-contrast-colors": "^1.0.0"

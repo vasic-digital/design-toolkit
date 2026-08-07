@@ -1,0 +1,6 @@
+wrote ../evidence/tokens/vasic-digital.tokens.json
+seed="vasic-digital" -> variant=Rainbow hue=63 harmony=mono typeRatio=1.333 space=1 radius=8 contrast=premium-dark fontPair=geometric-modern
+wrote ../evidence/tokens/milosvasic.tokens.json
+seed="milosvasic" -> variant=Expressive hue=46 harmony=mono typeRatio=1.5 space=1.25 radius=4 contrast=standard fontPair=humanist-warm
+wrote ../evidence/tokens/helix.tokens.json
+seed="helix" -> variant=TonalSpot hue=112 harmony=complementary typeRatio=1.25 space=0.85 radius=4 contrast=standard fontPair=geometric-modern

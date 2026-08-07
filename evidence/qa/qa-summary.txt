@@ -1,0 +1,8 @@
+D1 token-validity: PASS (103 tokens, 0 errors)
+D2 contrast: PASS (28 pairs; min text 4.65:1, min any 4.65:1)
+D7 uniqueness: PASS (min primary-hue delta 47.08 deg over 3 seeds)
+   - vasic-digital: primary #683a00 oklchHue 63.14 deg (Rainbow)
+   - milosvasic: primary #585799 oklchHue 282.53 deg (Expressive)
+   - helix: primary #616219 oklchHue 110.21 deg (TonalSpot)
+
+OVERALL: PASS

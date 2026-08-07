@@ -1,0 +1,12 @@
+=== DETERMINISM: sha256 of tokens, same seed generated twice ===
+vasic-digital    run1=9d427bce347a3ef188137368eb041591d2c11623c7797c452dab169039a8c39c
+                 run2=9d427bce347a3ef188137368eb041591d2c11623c7797c452dab169039a8c39c  -> IDENTICAL
+milosvasic       run1=d8193c3d5b49681154e63509d228155885f1475c58c20894e33b2410ea9dfbc9
+                 run2=d8193c3d5b49681154e63509d228155885f1475c58c20894e33b2410ea9dfbc9  -> IDENTICAL
+helix            run1=e6c5cdffc828a384fa4961e2adf71353ae014eb2f813da3f73a01db39c8f8571
+                 run2=e6c5cdffc828a384fa4961e2adf71353ae014eb2f813da3f73a01db39c8f8571  -> IDENTICAL
+
+=== CROSS-SEED: primary colors DIFFER (light scheme) ===
+vasic-digital    primary=#683a00 oklchHue=63.14deg variant=Rainbow
+milosvasic       primary=#585799 oklchHue=282.53deg variant=Expressive
+helix            primary=#616219 oklchHue=110.21deg variant=TonalSpot

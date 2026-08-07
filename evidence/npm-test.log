@@ -1,0 +1,56 @@
+
+> @vasic-digital/design-toolkit-generators@0.1.0 test
+> node --test
+
+TAP version 13
+# Subtest: determinism: same seed => byte-identical token document
+ok 1 - determinism: same seed => byte-identical token document
+  ---
+  duration_ms: 16.875583
+  type: 'test'
+  ...
+# Subtest: determinism: same seed => identical resolved vector
+ok 2 - determinism: same seed => identical resolved vector
+  ---
+  duration_ms: 0.684625
+  type: 'test'
+  ...
+# Subtest: determinism: same seed => byte-identical SVG mark
+ok 3 - determinism: same seed => byte-identical SVG mark
+  ---
+  duration_ms: 12.113625
+  type: 'test'
+  ...
+# Subtest: DTCG validity: every generated document is structurally valid
+ok 4 - DTCG validity: every generated document is structurally valid
+  ---
+  duration_ms: 3.398208
+  type: 'test'
+  ...
+# Subtest: contrast gate: all semantic pairs clear WCAG threshold in light+dark
+ok 5 - contrast gate: all semantic pairs clear WCAG threshold in light+dark
+  ---
+  duration_ms: 5.651125
+  type: 'test'
+  ...
+# Subtest: uniqueness: distinct seeds produce distinct primary hues (>=15 deg)
+ok 6 - uniqueness: distinct seeds produce distinct primary hues (>=15 deg)
+  ---
+  duration_ms: 2.756292
+  type: 'test'
+  ...
+# Subtest: uniqueness: different seeds differ in the design-DNA vector
+ok 7 - uniqueness: different seeds differ in the design-DNA vector
+  ---
+  duration_ms: 0.108
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 281.705917

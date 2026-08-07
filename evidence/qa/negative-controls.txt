@@ -1,0 +1,17 @@
+=== NEGATIVE CONTROL 1: mutate on-primary to a low-contrast value (must FAIL D2) ===
+D2 contrast: FAIL (28 pairs; min text 1.86:1, min any 1.86:1)
+OVERALL: FAIL
+      "dimension": "D2-contrast",
+exit: 0
+
+=== NEGATIVE CONTROL 2: single seed => no cross-seed variance (must FAIL D7) ===
+D7 uniqueness: FAIL (min primary-hue delta Infinity deg over 1 seeds)
+OVERALL: FAIL
+      "dimension": "D7-uniqueness",
+run-checks exit code for single-seed:
+1
+
+=== NEGATIVE CONTROL 3: reuse SAME seed twice => zero hue delta (must FAIL D7) ===
+D7 uniqueness: FAIL (min primary-hue delta 0 deg over 2 seeds)
+OVERALL: FAIL
+      "dimension": "D7-uniqueness",
