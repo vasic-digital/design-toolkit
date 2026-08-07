@@ -17,9 +17,14 @@ specialist agent until a **zero-finding clean verdict** (§11.4.134).
 carries an **`exec`** column: `RUN` (implemented + asserted in run-checks.mjs), `AUDITOR` (rendered by
 the design-qa-auditor MCP harness), or `SPEC` (defined here, **not yet executed — do not report PASS
 without building the runner first**). As of this writing, run-checks.mjs implements **D1 (DTCG
-validity), D2 (WCAG AA contrast), D7 (hue-delta), D8 (min pairwise ΔE00 ≥10 on primaries)** with real
-assertions; everything marked `SPEC` here is unproven until its runner exists. Do **not** claim any
-`SPEC` check passes.
+validity), D2 (WCAG AA contrast), D7 (hue-delta), U1/D8 (min pairwise ΔE00 ≥10 on primaries),
+U2 (min pairwise CAM16-UCS ΔE′ ≥8 on primaries), A1b (APCA Lc — RUN but ADVISORY, never gates),
+and DET1 (determinism: same seed ⇒ byte-identical token + SVG-mark sha256)** with real assertions.
+Real captured output for all of these lives at
+[`../evidence/qa-run-hardened-checks.txt`](../evidence/qa-run-hardened-checks.txt) (ΔE00, CAM16-UCS
+ΔE′, APCA Lc, and determinism hashes — no hardcoded numbers). Everything still marked `SPEC` here
+(U3, U4, U5, and the AUDITOR-side platform / rendered a11y checks) is unproven until its runner
+exists. Do **not** claim any `SPEC` check passes.
 
 **Load-bearing caveats (carry verbatim, never launder):**
 - **JND caveat** — ΔE00 ≈ 1.0 is the *nominal* JND but the JND is **not uniform** across color space
@@ -45,10 +50,10 @@ assertions; everything marked `SPEC` here is unproven until its runner exists. D
 
 | Challenge | Verifies | Runner |
 |-----------|----------|--------|
-| **C-UNIQ** — Uniqueness | ≥2 projects on the shared engine read as **distinct brands** in token space | run-checks.mjs (U1) + SPEC (U2–U5) |
-| **C-A11Y** — a11y HARD-FAIL | a per-project accessibility **floor** that fails the build the instant it is breached | run-checks.mjs (A1 token-level) + AUDITOR (A1–A4 rendered) |
+| **C-UNIQ** — Uniqueness | ≥2 projects on the shared engine read as **distinct brands** in token space | run-checks.mjs (U1/D8 + U2) + SPEC (U3–U5) |
+| **C-A11Y** — a11y HARD-FAIL | a per-project accessibility **floor** that fails the build the instant it is breached | run-checks.mjs (A1a gating + A1b APCA advisory, token-level) + AUDITOR (A1–A4 rendered) |
 | **C-PLAT** — Platform-conformance | native target-size / type-scale / safe-area / contrast per target platform | AUDITOR + SPEC (per `platforms/*`) |
-| **C-DET** — Determinism | same seed ⇒ **byte-identical** tokens (+ SVG mark) | run-checks.mjs-adjacent (D1) — see §5 |
+| **C-DET** — Determinism | same seed ⇒ **byte-identical** tokens (+ SVG mark) | run-checks.mjs (DET1) — see §5 |
 
 ---
 
@@ -60,7 +65,7 @@ on the resolved design-DNA / emitted tokens (not pixels — pixel-diff is D7 in 
 | # | Check | Metric | Threshold | Tag | exec |
 |---|-------|--------|-----------|-----|------|
 | **U1** | perceptual color separation | min pairwise **CIEDE2000 ΔE00** on primary role colors | **≥ 10** | metric **[E]**, threshold **[H]** | **RUN** (D8) |
-| **U2** | large-diff / gamut-aware separation | **CAM16-UCS ΔE′** on primaries (used where ΔE00 saturates) | **≥ 8** | metric **[E]**, threshold **[H]** | **SPEC** (pending pinned CAM16 dep; `qa/lib/deltae.mjs` currently ships ΔE-OK/OKLab, **not** CAM16-UCS) |
+| **U2** | large-diff / gamut-aware separation | **CAM16-UCS ΔE′** on primaries (used where ΔE00 saturates) | **≥ 8** | metric **[E]**, threshold **[H]** | **RUN** (`qa/lib/cam16.mjs` — raw Euclidean CAM16-UCS ΔE′ via the pinned Google material-color-utilities `Cam16`, Li et al. 2017; checked both modes, min = worse mode; measured min ΔE′ **18.09** over the 3 default seeds ≫ 8) |
 | **U3** | overall DNA separation (blue-noise) | combined **weighted DNA-distance** (color>type>shape≈layout>spacing>motion≈texture, axes normalized [0,1]) — Poisson-disk min-radius invariant | **≥ 0.25** | method **[E]** (Bridson), r **[H]** | **SPEC** |
 | **U4** | type identity separation | **type-pair distance** (display+body pairing distance in the curated pool's feature space) | **≥ 0.3** | **[H]** | **SPEC** |
 | **U5** | capacity report | as space fills, radius shrank gracefully **or** saturation was reported (no infinite loop) | report present + honest | **[E]** method, **[H]** r | **SPEC** |
@@ -79,7 +84,7 @@ A **binary floor**: any breach fails the build immediately (no "score", no parti
 | # | Check | Metric | Threshold | Tag | exec |
 |---|-------|--------|-----------|-----|------|
 | **A1a** | WCAG 2.2 AA contrast (normative) | `contrast_pass_rate` over **all** semantic fg/bg pairs, **both** light+dark | **== 100%** (text 4.5:1, large 3:1, UI/graphic 3:1) | **[E]** | **RUN** (D2, token-level) + **AUDITOR** (rendered) |
-| **A1b** | APCA (secondary screen) | APCA **Lc** per font-size class | **Lc ≥ 90 / 75 / 45 / 30** (body-fine / body / large / non-text, per APCA table) | **[E]** metric, **DRAFT** | **SPEC** — **APCA-draft caveat: additional screen only, never replaces A1a** |
+| **A1b** | APCA (secondary screen) | APCA **Lc** per font-size class | **Lc ≥ 90 / 75 / 60 / 45 / 30** (fluent-body-info / body / supporting+container / fill-label+large / non-text, per APCA table) | **[E]** metric, **DRAFT** | **RUN — ADVISORY, NEVER GATES** (`qa/lib/apca.mjs` — faithful APCA-W3 0.1.9, cross-validated exact vs `apca-w3`; each semantic pair assigned its role-appropriate APCA minimum; all 84 pairs (3 seeds ×2 modes) clear their tier — dark-mode primary body lands Lc ~88.5–88.9, honestly reported as just under the informational fluent-90 tier). **APCA-draft caveat: additional screen only, never replaces A1a** — excluded from the overall verdict/exit code |
 | **A2** | body size | rendered body font-size | **≥ platform min** (web ~16px; iOS 17pt; Android body 16sp; per `platforms/*`) | **[H]** on the floor | **AUDITOR** |
 | **A3** | measure + line-height | line length (measure) + line-height | measure **45–75 char** (print/editorial); body line-height **≥ 1.4** (WCAG 1.4.12 spacing) | **[H]**/[E] | **AUDITOR** |
 | **A4** | reduced-motion collapse | every motion token has a reduced-motion counterpart that lands the **same end-state** with no movement (2.3.3/2.2.2) | 100% of motions collapse | **[E]** | **AUDITOR** (grep + rendered reduced-motion golden) |
@@ -107,7 +112,7 @@ so. All `exec = AUDITOR` (rendered/measured) unless noted `SPEC`.
 
 | # | Check | Metric | Threshold | Tag | exec |
 |---|-------|--------|-----------|-----|------|
-| **DET1** | token reproducibility | `sha256(tokens.json)` for two runs of the same seed + options + generator version | **byte-identical** (hashes equal) | **[E]** | RUN-adjacent — the generator's `npm test` already asserts determinism; this Challenge re-hashes the emitted DTCG (and the SVG mark) as external proof |
+| **DET1** | token reproducibility | `sha256(tokens.json)` for two runs of the same seed + options + generator version | **byte-identical** (hashes equal) | **[E]** | **RUN** — run-checks.mjs re-generates each seed twice and asserts byte-identical `sha256(canonical DTCG)` **and** `sha256(SVG mark)` (in addition to the generator's `npm test` determinism test). Real hashes captured in the evidence file |
 
 No `Math.random()` anywhere in the pipeline; every choice draws from the seeded PRNG
 (`../generators/lib/prng.mjs`). Seed + resolved DNA vector + generator version are recorded in the
@@ -162,12 +167,13 @@ A uniqueness/conformance suite is only trustworthy if a **deliberately broken** 
 
 ## 8. Gates (CI wiring — next checkpoint)
 
-- **CM-DESIGN-UNIQUENESS** (blocking when ≥2 projects share the engine): C-UNIQ **U1** PASS (RUN
-  today); U2–U5 become blocking once their runners land.
+- **CM-DESIGN-UNIQUENESS** (blocking when ≥2 projects share the engine): C-UNIQ **U1 + U2** PASS (both
+  RUN today); U3–U5 become blocking once their runners land.
 - **CM-DESIGN-A11Y-FLOOR** (blocking): C-A11Y **A1a == 100%** (RUN token-level + AUDITOR rendered);
-  A2–A4 blocking via the auditor harness.
+  A2–A4 blocking via the auditor harness. **A1b (APCA) is RUN but ADVISORY — it is measured and
+  reported, but never gates (draft/secondary never gates alone).**
 - **CM-DESIGN-PLATFORM** (blocking per shipped platform): C-PLAT P1–P5 PASS for each target.
-- **CM-DESIGN-DETERMINISM** (blocking): C-DET DET1 byte-identical.
+- **CM-DESIGN-DETERMINISM** (blocking): C-DET DET1 byte-identical (RUN in run-checks.mjs).
 - **Draft/secondary never gate alone:** APCA (A1b) is advisory; pilot MCPs don't gate (INSTALL.md §3).
   Playwright `toHaveScreenshot` + Chrome DevTools Lighthouse + run-checks.mjs are the gate-grade tools.
 
@@ -197,9 +203,12 @@ _tests/evidence/design-toolkit/<run-id>/
 
 ## 10. Status
 
-**SPEC** for the first increment: dimensions, thresholds, `[E]/[H]` tags + caveats, mutations, and the
-evidence schema are defined. Executable **today**: U1 (ΔE00), A1a (token-level contrast), and the
-generator's determinism test; the base [`design-qa-testbank.md`](design-qa-testbank.md) covers the
-rendered D1–D7. Building the SPEC runners (CAM16-UCS ΔE′ with a pinned dep, weighted DNA-distance,
-type-pair distance, capacity report, the AUDITOR-side platform + a11y-floor assertions) and wiring the
-CM gates is a **next-checkpoint** task — **do not report a SPEC check as PASS until its runner exists.**
+Dimensions, thresholds, `[E]/[H]` tags + caveats, mutations, and the evidence schema are defined.
+Executable **today** in [`run-checks.mjs`](run-checks.mjs) with real assertions and captured evidence
+([`../evidence/qa-run-hardened-checks.txt`](../evidence/qa-run-hardened-checks.txt)): **U1/D8 (ΔE00),
+U2 (CAM16-UCS ΔE′ via the pinned material-color-utilities), A1a (token-level WCAG AA contrast), A1b
+(APCA Lc — advisory), and DET1 (determinism)**; the base
+[`design-qa-testbank.md`](design-qa-testbank.md) covers the rendered D1–D7. Still **SPEC** (no runner
+yet): U3 weighted DNA-distance, U4 type-pair distance, U5 capacity report, and the AUDITOR-side
+platform + rendered a11y-floor assertions. Wiring the CM gates is a **next-checkpoint** task — **do not
+report a SPEC check as PASS until its runner exists.**

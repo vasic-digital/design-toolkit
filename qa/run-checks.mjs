@@ -1,34 +1,49 @@
 #!/usr/bin/env node
 // Executable design-QA runner — the runnable slice of design-qa-testbank.md.
 //
-// Validates a generated token set with REAL assertions and real pass/fail:
-//   D1  DTCG structural validity      (dtcg-tokens.md)
-//   D2  WCAG AA contrast gate         (color.md §4; text >=4.5:1, UI >=3:1, both modes)
-//   D7  cross-seed uniqueness variance (distinct primary OKLCH hues beyond a threshold)
-//   D8  cross-seed ΔE00 uniqueness     (min pairwise CIEDE2000 on primaries >= 10;
-//                                       see qa/uniqueness-and-platform-conformance.md U1 [E])
+// Validates a generated token set with REAL assertions and real pass/fail.
+// GATING checks (contribute to the overall verdict / exit code):
+//   D1   DTCG structural validity      (dtcg-tokens.md)
+//   D2   WCAG AA contrast gate         (color.md §4; text >=4.5:1, UI >=3:1, both modes)
+//   D7   cross-seed uniqueness variance (distinct primary OKLCH hues beyond a threshold)
+//   D8   cross-seed ΔE00 uniqueness     (U1: min pairwise CIEDE2000 on primaries >= 10)
+//   U2   cross-seed CAM16-UCS ΔE′       (min pairwise CAM16-UCS ΔE′ on primaries >= 8)
+//   DET1 determinism                    (same seed twice -> byte-identical token + mark hash)
+// ADVISORY checks (RUN + measured, but NEVER gate — reported for information):
+//   A1b  APCA Lc                        (perceptual contrast; DRAFT/WCAG3, additional screen only)
 //
-// D8 is the research's primary uniqueness invariant: hue delta (D7) is a cheap
-// screen, but two seeds can share a hue while differing greatly in tone/chroma,
-// or differ in hue while colliding perceptually. ΔE00 measures the actual
-// perceptual gap. Implemented dependency-free in qa/lib/deltae.mjs (validated
-// against colorjs.io); the CAM16-UCS ΔE′, DNA-distance, type-pair and capacity
-// dimensions in the test-bank are SPEC-only pending a pinned CAM16 dep.
+// Perceptual uniqueness rationale: hue delta (D7) is a cheap screen; two seeds
+// can share a hue while differing in tone/chroma or differ in hue while
+// colliding perceptually. D8 (ΔE00) and U2 (CAM16-UCS ΔE′) measure the actual
+// perceptual gap with two independent color-difference models. ΔE00/ΔE-OK are
+// implemented dependency-free in qa/lib/deltae.mjs (validated vs colorjs.io);
+// CAM16-UCS ΔE′ is computed in qa/lib/cam16.mjs via the pinned Google
+// material-color-utilities Cam16 (Li et al. 2017); APCA Lc in qa/lib/apca.mjs
+// is a faithful APCA-W3 0.1.9 implementation (cross-validated vs apca-w3).
+// Still SPEC (no runner yet): U3 DNA-distance, U4 type-pair, U5 capacity, and
+// the AUDITOR-side platform / rendered a11y checks — see
+// qa/uniqueness-and-platform-conformance.md.
 //
 // Usage:
 //   node run-checks.mjs --tokens path/to/tokens.json \
-//        --seeds "vasic-digital,milosvasic,helix" --hue-threshold 15 --de00-threshold 10
+//        --seeds "vasic-digital,milosvasic,helix" \
+//        --hue-threshold 15 --de00-threshold 10 --cam16-threshold 8
 //
 // If --tokens is omitted, a set is generated in-memory from the first seed.
-// Exit code 0 = all PASS; non-zero = at least one FAIL. Machine-readable JSON
+// Exit code 0 = all GATING checks PASS; non-zero = at least one gating FAIL.
+// (A1b APCA is advisory and never changes the exit code.) Machine-readable JSON
 // verdict goes to stdout; human summary to stderr.
 
 import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { validateDtcg, extractSchemes } from "../generators/lib/dtcg.mjs";
-import { evaluateScheme } from "../generators/lib/color.mjs";
+import { evaluateScheme, SEMANTIC_PAIRS } from "../generators/lib/color.mjs";
 import { oklchHue, hueDelta } from "../generators/lib/color.mjs";
 import { generateTokens } from "../generators/lib/tokens.mjs";
+import { generateMark } from "../generators/lib/marks.mjs";
 import { deltaE00, deltaEOK } from "./lib/deltae.mjs";
+import { deltaEPrimeCam16, deltaECam16 } from "./lib/cam16.mjs";
+import { apcaLc } from "./lib/apca.mjs";
 
 function parseArgs(argv) {
   const args = {
@@ -36,6 +51,7 @@ function parseArgs(argv) {
     seeds: ["vasic-digital", "milosvasic", "helix"],
     hueThreshold: 15,
     de00Threshold: 10, // research U1 [E]: min pairwise ΔE00 on primaries
+    cam16Threshold: 8, // research U2 [E]: min pairwise CAM16-UCS ΔE′ on primaries
   };
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
@@ -43,8 +59,9 @@ function parseArgs(argv) {
     else if (a === "--seeds") args.seeds = (argv[++i] || "").split(",").map((s) => s.trim()).filter(Boolean);
     else if (a === "--hue-threshold") args.hueThreshold = parseFloat(argv[++i]);
     else if (a === "--de00-threshold") args.de00Threshold = parseFloat(argv[++i]);
+    else if (a === "--cam16-threshold") args.cam16Threshold = parseFloat(argv[++i]);
     else if (a === "--help" || a === "-h") {
-      process.stdout.write("Usage: node run-checks.mjs [--tokens tokens.json] [--seeds a,b,c] [--hue-threshold 15] [--de00-threshold 10]\n");
+      process.stdout.write("Usage: node run-checks.mjs [--tokens tokens.json] [--seeds a,b,c] [--hue-threshold 15] [--de00-threshold 10] [--cam16-threshold 8]\n");
       process.exit(0);
     }
   }
@@ -179,15 +196,168 @@ dimensions.push({
 log(`D8 uniqueness-ΔE00: ${de00Pass ? "PASS" : "FAIL"} (min pairwise ΔE00 ${Math.round(minDe00 * 100) / 100} over ${args.seeds.length} seeds, threshold ${args.de00Threshold})`);
 for (const p of de00Pairs) log(`   - ${p.a} vs ${p.b}: ΔE00 light ${p.de00Light}, dark ${p.de00Dark}`);
 
-// --- Overall verdict ---------------------------------------------------------
-const overall = dimensions.every((d) => d.verdict === "PASS") ? "PASS" : "FAIL";
+// --- U2: cross-seed CAM16-UCS ΔE′ uniqueness --------------------------------
+// Second, independent perceptual-uniqueness invariant (U2 [E]): the min pairwise
+// CAM16-UCS ΔE′ (raw Euclidean distance in CAM16-UCS J*a*b*) between project
+// primaries must be >= threshold (default 8). CAM16 is a full color-appearance
+// model, so it complements ΔE00 (CIELab-based) — used where ΔE00 saturates or
+// gamut/appearance effects dominate. Checked in BOTH schemes; reported min is
+// the worse mode. The compressed form (1.41·ΔE′^0.63) is reported alongside.
+const cam16Pairs = [];
+let minCam16 = Infinity;
+for (let i = 0; i < primaries.length; i++) {
+  for (let j = i + 1; j < primaries.length; j++) {
+    const A = primaries[i], B = primaries[j];
+    const dLight = deltaEPrimeCam16(A.light, B.light);
+    const dDark = deltaEPrimeCam16(A.dark, B.dark);
+    const worst = Math.min(dLight, dDark);
+    cam16Pairs.push({
+      a: A.seed, b: B.seed,
+      dEPrimeLight: Math.round(dLight * 100) / 100,
+      dEPrimeDark: Math.round(dDark * 100) / 100,
+      dECompressedLight: Math.round(deltaECam16(A.light, B.light) * 100) / 100,
+    });
+    if (worst < minCam16) minCam16 = worst;
+  }
+}
+const cam16Pass = args.seeds.length >= 2 && minCam16 >= args.cam16Threshold;
+dimensions.push({
+  dimension: "U2-uniqueness-cam16ucs",
+  verdict: cam16Pass ? "PASS" : "FAIL",
+  rationale: cam16Pass
+    ? `${args.seeds.length} seeds produce primaries separated by CAM16-UCS ΔE′ >= ${args.cam16Threshold} in both modes (min ${Math.round(minCam16 * 100) / 100})`
+    : `min pairwise CAM16-UCS ΔE′ ${Math.round(minCam16 * 100) / 100} < ${args.cam16Threshold} threshold`,
+  measurements: {
+    metric: "CAM16-UCS ΔE′ (Euclidean J*a*b*; MCU Cam16, Li et al. 2017)",
+    primaries: primaries.map((p) => ({ seed: p.seed, light: p.light, dark: p.dark })),
+    pairDeltas: cam16Pairs,
+    minDeltaEPrime: Math.round(minCam16 * 100) / 100,
+    threshold: args.cam16Threshold,
+  },
+  tags: ["[E]-metric", "[H]-threshold"],
+  caveats: ["JND-non-uniform"],
+});
+log(`U2 uniqueness-CAM16-UCS ΔE′: ${cam16Pass ? "PASS" : "FAIL"} (min pairwise ΔE′ ${Math.round(minCam16 * 100) / 100} over ${args.seeds.length} seeds, threshold ${args.cam16Threshold})`);
+for (const p of cam16Pairs) log(`   - ${p.a} vs ${p.b}: ΔE′ light ${p.dEPrimeLight}, dark ${p.dEPrimeDark} (compressed ΔE ${p.dECompressedLight})`);
+
+// --- A1b: APCA Lc (ADVISORY — DRAFT/WCAG3, never gates) ----------------------
+// APCA is a DRAFT (WCAG 3, non-normative). This is an ADDITIONAL perceptual
+// screen only; it NEVER replaces the normative WCAG 2.2 AA gate (D2). It is
+// therefore marked advisory:true and does NOT affect the overall verdict/exit
+// code (uniqueness-and-platform-conformance.md A1b + "draft never gates alone").
+// Each semantic pair is assigned the APCA minimum appropriate to its rendered
+// text role (per the APCA font/size lookup tiers): running body text Lc>=75,
+// supporting/container text Lc>=60, fill labels & large/headline Lc>=45,
+// non-text UI edges Lc>=30. The stricter "fluent body" Lc>=90 tier is reported
+// informationally for the primary running-text pairs.
+const APCA_ROLE = {
+  // primary running body text
+  "on-surface/surface": { cls: "body", min: 75, fluent90: true },
+  "on-background/background": { cls: "body", min: 75, fluent90: true },
+  "inverse-on-surface/inverse-surface": { cls: "body", min: 75 },
+  // supporting / secondary text
+  "on-surface-variant/surface-variant": { cls: "supporting", min: 60 },
+  // text on tonal containers (supporting copy)
+  "on-primary-container/primary-container": { cls: "container", min: 60 },
+  "on-secondary-container/secondary-container": { cls: "container", min: 60 },
+  "on-tertiary-container/tertiary-container": { cls: "container", min: 60 },
+  "on-error-container/error-container": { cls: "container", min: 60 },
+  // labels on saturated fills (buttons/chips — large/emphasis tier)
+  "on-primary/primary": { cls: "fill-label", min: 45 },
+  "on-secondary/secondary": { cls: "fill-label", min: 45 },
+  "on-tertiary/tertiary": { cls: "fill-label", min: 45 },
+  "on-error/error": { cls: "fill-label", min: 45 },
+};
+const APCA_UI_MIN = 30; // non-text UI / graphic edges (kind:"ui")
+const apcaRows = [];
+for (const seed of args.seeds) {
+  const { schemes: s } = generateTokens(seed);
+  for (const mode of ["light", "dark"]) {
+    const scheme = s[mode];
+    for (const { fg, bg, kind } of SEMANTIC_PAIRS) {
+      if (scheme[fg] == null || scheme[bg] == null) continue;
+      const key = `${fg}/${bg}`;
+      const role = kind === "ui" ? { cls: "non-text-ui", min: APCA_UI_MIN } : APCA_ROLE[key];
+      if (!role) continue;
+      const Lc = apcaLc(scheme[fg], scheme[bg]);
+      const absLc = Math.abs(Lc);
+      apcaRows.push({
+        seed, mode, pair: key, cls: role.cls,
+        Lc: Math.round(Lc * 10) / 10, absLc: Math.round(absLc * 10) / 10,
+        min: role.min, pass: absLc >= role.min,
+        fluent90: role.fluent90 ? absLc >= 90 : undefined,
+      });
+    }
+  }
+}
+const apcaFails = apcaRows.filter((r) => !r.pass);
+const apcaFluentMiss = apcaRows.filter((r) => r.fluent90 === false);
+dimensions.push({
+  dimension: "A1b-apca",
+  advisory: true,
+  verdict: apcaFails.length === 0 ? "PASS" : "FAIL",
+  rationale: apcaFails.length === 0
+    ? `all ${apcaRows.length} semantic pairs meet their role-appropriate APCA Lc minimum (body>=75, supporting/container>=60, fill/large>=45, non-text>=30) across ${args.seeds.length} seeds x2 modes`
+    : `${apcaFails.length} pair(s) below their APCA Lc minimum (advisory only; WCAG 2.2 AA gate is D2)`,
+  measurements: {
+    metric: "APCA Lc (APCA-W3 0.1.9; qa/lib/apca.mjs, cross-validated vs apca-w3)",
+    thresholds: { body: 75, supporting: 60, container: 60, "fill-label": 45, "non-text-ui": 30, "fluent-body-informational": 90 },
+    pairsChecked: apcaRows.length,
+    rows: apcaRows,
+    fluent90MissesOnPrimaryBody: apcaFluentMiss.map((r) => ({ seed: r.seed, mode: r.mode, pair: r.pair, Lc: r.absLc })),
+  },
+  tags: ["[E]-metric", "DRAFT"],
+  caveats: ["APCA-draft: additional screen only, never replaces the normative WCAG 2.2 AA gate (D2)"],
+});
+log(`A1b APCA (ADVISORY, non-gating): ${apcaFails.length === 0 ? "PASS" : "FAIL"} ` +
+    `(${apcaRows.length} pairs; ${apcaFails.length} below role min; ${apcaFluentMiss.length} primary-body pairs under the informational fluent-90 tier)`);
+for (const r of apcaFails) log(`   - below-min ${r.seed} ${r.mode} ${r.pair} = Lc ${r.absLc} < ${r.min} (${r.cls})`);
+for (const r of apcaFluentMiss) log(`   - fluent-90 info: ${r.seed} ${r.mode} ${r.pair} = Lc ${r.absLc} (< 90 fluent tier; >= 75 body min OK)`);
+
+// --- DET1: determinism (same seed -> byte-identical tokens + mark) -----------
+// C-DET / DET1 [E]: re-generate each seed twice and hash the canonical DTCG
+// document and the SVG mark; both hashes must be byte-identical across runs.
+// This is the external proof that the pipeline draws only from the seeded PRNG
+// (no Math.random) — run here in-process, not just in `npm test`.
+const sha256 = (s) => createHash("sha256").update(s).digest("hex");
+const detRows = [];
+let detAllStable = true;
+for (const seed of args.seeds) {
+  const t1 = sha256(JSON.stringify(generateTokens(seed).document));
+  const t2 = sha256(JSON.stringify(generateTokens(seed).document));
+  const m1 = sha256(generateMark(seed).svg);
+  const m2 = sha256(generateMark(seed).svg);
+  const stable = t1 === t2 && m1 === m2;
+  if (!stable) detAllStable = false;
+  detRows.push({ seed, tokensSha256: t1, tokensStable: t1 === t2, markSha256: m1, markStable: m1 === m2 });
+}
+dimensions.push({
+  dimension: "DET1-determinism",
+  verdict: args.seeds.length >= 1 && detAllStable ? "PASS" : "FAIL",
+  rationale: detAllStable
+    ? `every seed re-generates byte-identical DTCG tokens and SVG mark (sha256 stable) across ${args.seeds.length} seed(s)`
+    : `at least one seed produced a non-deterministic token document or mark`,
+  measurements: { metric: "sha256(canonical DTCG) + sha256(SVG mark), run x2 per seed", runs: detRows },
+  tags: ["[E]"],
+});
+log(`DET1 determinism: ${detAllStable ? "PASS" : "FAIL"} (same seed -> byte-identical token+mark hash, ${args.seeds.length} seeds)`);
+for (const d of detRows) log(`   - ${d.seed}: tokens ${d.tokensSha256.slice(0, 12)}… (${d.tokensStable ? "stable" : "DRIFT"}), mark ${d.markSha256.slice(0, 12)}… (${d.markStable ? "stable" : "DRIFT"})`);
+
+// --- Overall verdict (advisory checks excluded from the gate) ----------------
+const gatingDims = dimensions.filter((d) => !d.advisory);
+const overall = gatingDims.every((d) => d.verdict === "PASS") ? "PASS" : "FAIL";
 const verdict = {
   feature_class: "design_qa",
   target: source,
   generatedAt_omitted_for_determinism: true,
   overall,
+  gatingDimensions: gatingDims.map((d) => d.dimension),
+  advisoryDimensions: dimensions.filter((d) => d.advisory).map((d) => d.dimension),
   dimensions,
 };
 process.stdout.write(JSON.stringify(verdict, null, 2) + "\n");
-log(`\nOVERALL: ${overall}`);
+const advisoryNote = dimensions.some((d) => d.advisory)
+  ? ` (advisory, not gated: ${dimensions.filter((d) => d.advisory).map((d) => `${d.dimension}=${d.verdict}`).join(", ")})`
+  : "";
+log(`\nOVERALL: ${overall}${advisoryNote}`);
 process.exit(overall === "PASS" ? 0 : 1);

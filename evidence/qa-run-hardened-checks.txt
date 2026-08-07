@@ -1,0 +1,1234 @@
+HelixQA run-checks.mjs — hardened executable checks — EVIDENCE
+Captured on host: Darwin 24.5.0 arm64; node v22.22.3
+Command sequence and REAL output (no Date.now; static filename).
+============================================================
+
+### 1. qa/lib/deltae.mjs --selftest (ΔE00/ΔE-OK vs colorjs.io) ###
+ΔE00 #4658b0/#b04658: got 36.063 ref 36.063 drift 0.000
+ΔE00 #683a00/#616219: got 20.678 ref 20.68 drift 0.002
+ΔE00 #585799/#616219: got 48.868 ref 48.87 drift 0.002
+ΔE00 #ffffff/#000000: got 100.000 ref 100 drift 0.000
+worst drift 0.002
+exit=0
+
+### 2. qa/lib/cam16.mjs --selftest (CAM16-UCS ΔE′ via MCU Cam16, Li et al. 2017) ###
+CAM16 #683a00/#616219: ΔE′ 20.691 (compressed ΔE 9.510)
+CAM16 #683a00/#585799: ΔE′ 43.860 (compressed ΔE 15.266)
+CAM16 #616219/#585799: ΔE′ 45.765 (compressed ΔE 15.680)
+cam16 self-test PASS
+exit=0
+
+### 3. qa/lib/apca.mjs --selftest (APCA-W3 0.1.9, cross-validated vs apca-w3) ###
+APCA #000000/#ffffff: mine 106.0407 ref 106.0407 drift 0.00000
+APCA #ffffff/#000000: mine -107.8847 ref -107.8847 drift 0.00000
+APCA #888888/#ffffff: mine 63.0565 ref 63.0565 drift 0.00000
+APCA #ffffff/#888888: mine -68.5415 ref -68.5415 drift 0.00000
+APCA #1b1b1b/#f9f9f9: mine 100.5273 ref 100.5273 drift 0.00000
+APCA #ffffff/#683a00: mine -96.0745 ref -96.0745 drift 0.00000
+APCA #454545/#e2e2e2: mine 75.1573 ref 75.1573 drift 0.00000
+APCA #616161/#f9f9f9: mine 77.3244 ref 77.3244 drift 0.00000
+APCA #341b00/#ffb872: mine 70.4358 ref 70.4358 drift 0.00000
+APCA #c6c6c6/#131313: mine -71.4668 ref -71.4668 drift 0.00000
+worst drift 0.00000 Lc
+exit=0
+
+### 4. node qa/run-checks.mjs — human summary (stderr) ###
+D1 token-validity: PASS (103 tokens, 0 errors)
+D2 contrast: PASS (28 pairs; min text 4.65:1, min any 4.65:1)
+D7 uniqueness: PASS (min primary-hue delta 47.08 deg over 3 seeds)
+   - vasic-digital: primary #683a00 oklchHue 63.14 deg (Rainbow)
+   - milosvasic: primary #585799 oklchHue 282.53 deg (Expressive)
+   - helix: primary #616219 oklchHue 110.21 deg (TonalSpot)
+D8 uniqueness-ΔE00: PASS (min pairwise ΔE00 20.68 over 3 seeds, threshold 10)
+   - vasic-digital vs milosvasic: ΔE00 light 42.33, dark 41.11
+   - vasic-digital vs helix: ΔE00 light 20.68, dark 21.01
+   - milosvasic vs helix: ΔE00 light 48.87, dark 46.98
+U2 uniqueness-CAM16-UCS ΔE′: PASS (min pairwise ΔE′ 18.09 over 3 seeds, threshold 8)
+   - vasic-digital vs milosvasic: ΔE′ light 43.86, dark 40.97 (compressed ΔE 15.27)
+   - vasic-digital vs helix: ΔE′ light 20.69, dark 18.09 (compressed ΔE 9.51)
+   - milosvasic vs helix: ΔE′ light 45.76, dark 43.09 (compressed ΔE 15.68)
+A1b APCA (ADVISORY, non-gating): PASS (84 pairs; 0 below role min; 5 primary-body pairs under the informational fluent-90 tier)
+   - fluent-90 info: vasic-digital dark on-background/background = Lc 88.5 (< 90 fluent tier; >= 75 body min OK)
+   - fluent-90 info: milosvasic dark on-surface/surface = Lc 88.6 (< 90 fluent tier; >= 75 body min OK)
+   - fluent-90 info: milosvasic dark on-background/background = Lc 88.6 (< 90 fluent tier; >= 75 body min OK)
+   - fluent-90 info: helix dark on-surface/surface = Lc 88.9 (< 90 fluent tier; >= 75 body min OK)
+   - fluent-90 info: helix dark on-background/background = Lc 88.9 (< 90 fluent tier; >= 75 body min OK)
+DET1 determinism: PASS (same seed -> byte-identical token+mark hash, 3 seeds)
+   - vasic-digital: tokens b805c32f324d… (stable), mark a4dd75e76d14… (stable)
+   - milosvasic: tokens 3cf8215ccc6b… (stable), mark cccfb2ee0907… (stable)
+   - helix: tokens d3a287fb9361… (stable), mark 02394332bb13… (stable)
+
+OVERALL: PASS (advisory, not gated: A1b-apca=PASS)
+exit=0
+
+### 5. golden-BAD mutation: --seeds helix,helix (U1/U2 MUST FAIL) ###
+D1 token-validity: PASS (103 tokens, 0 errors)
+D2 contrast: PASS (28 pairs; min text 5.51:1, min any 4.24:1)
+D7 uniqueness: FAIL (min primary-hue delta 0 deg over 2 seeds)
+   - helix: primary #616219 oklchHue 110.21 deg (TonalSpot)
+   - helix: primary #616219 oklchHue 110.21 deg (TonalSpot)
+D8 uniqueness-ΔE00: FAIL (min pairwise ΔE00 0 over 2 seeds, threshold 10)
+   - helix vs helix: ΔE00 light 0, dark 0
+U2 uniqueness-CAM16-UCS ΔE′: FAIL (min pairwise ΔE′ 0 over 2 seeds, threshold 8)
+   - helix vs helix: ΔE′ light 0, dark 0 (compressed ΔE 0)
+A1b APCA (ADVISORY, non-gating): PASS (56 pairs; 0 below role min; 4 primary-body pairs under the informational fluent-90 tier)
+   - fluent-90 info: helix dark on-surface/surface = Lc 88.9 (< 90 fluent tier; >= 75 body min OK)
+   - fluent-90 info: helix dark on-background/background = Lc 88.9 (< 90 fluent tier; >= 75 body min OK)
+   - fluent-90 info: helix dark on-surface/surface = Lc 88.9 (< 90 fluent tier; >= 75 body min OK)
+   - fluent-90 info: helix dark on-background/background = Lc 88.9 (< 90 fluent tier; >= 75 body min OK)
+DET1 determinism: PASS (same seed -> byte-identical token+mark hash, 2 seeds)
+   - helix: tokens d3a287fb9361… (stable), mark 02394332bb13… (stable)
+   - helix: tokens d3a287fb9361… (stable), mark 02394332bb13… (stable)
+
+OVERALL: FAIL (advisory, not gated: A1b-apca=PASS)
+exit=1 (non-zero expected)
+
+### 6. generators npm test (determinism + gates) ###
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 399.345917
+
+### 7. machine-readable verdict JSON (node qa/run-checks.mjs, stdout) ###
+{
+  "feature_class": "design_qa",
+  "target": "generated:vasic-digital",
+  "generatedAt_omitted_for_determinism": true,
+  "overall": "PASS",
+  "gatingDimensions": [
+    "D1-token-validity",
+    "D2-contrast",
+    "D7-uniqueness",
+    "D8-uniqueness-deltaE00",
+    "U2-uniqueness-cam16ucs",
+    "DET1-determinism"
+  ],
+  "advisoryDimensions": [
+    "A1b-apca"
+  ],
+  "dimensions": [
+    {
+      "dimension": "D1-token-validity",
+      "verdict": "PASS",
+      "rationale": "103 tokens are structurally valid DTCG",
+      "measurements": {
+        "tokenCount": 103,
+        "errorCount": 0
+      },
+      "errors": []
+    },
+    {
+      "dimension": "D2-contrast",
+      "verdict": "PASS",
+      "rationale": "all 28 semantic pairs clear their WCAG threshold in both modes",
+      "measurements": {
+        "pairsChecked": 28,
+        "minTextRatio": 4.65,
+        "minAnyRatio": 4.65
+      },
+      "failures": []
+    },
+    {
+      "dimension": "D7-uniqueness",
+      "verdict": "PASS",
+      "rationale": "3 seeds produce primary hues separated by >= 15 deg (min 47.08 deg)",
+      "measurements": {
+        "seeds": [
+          {
+            "seed": "vasic-digital",
+            "primary": "#683a00",
+            "oklchHue": 63.14,
+            "variant": "Rainbow"
+          },
+          {
+            "seed": "milosvasic",
+            "primary": "#585799",
+            "oklchHue": 282.53,
+            "variant": "Expressive"
+          },
+          {
+            "seed": "helix",
+            "primary": "#616219",
+            "oklchHue": 110.21,
+            "variant": "TonalSpot"
+          }
+        ],
+        "pairDeltas": [
+          {
+            "a": "vasic-digital",
+            "b": "milosvasic",
+            "delta": 140.61
+          },
+          {
+            "a": "vasic-digital",
+            "b": "helix",
+            "delta": 47.08
+          },
+          {
+            "a": "milosvasic",
+            "b": "helix",
+            "delta": 172.31
+          }
+        ],
+        "minHueDelta": 47.08,
+        "threshold": 15
+      }
+    },
+    {
+      "dimension": "D8-uniqueness-deltaE00",
+      "verdict": "PASS",
+      "rationale": "3 seeds produce primaries separated by ΔE00 >= 10 in both modes (min 20.68)",
+      "measurements": {
+        "metric": "CIEDE2000",
+        "primaries": [
+          {
+            "seed": "vasic-digital",
+            "light": "#683a00",
+            "dark": "#ffb872"
+          },
+          {
+            "seed": "milosvasic",
+            "light": "#585799",
+            "dark": "#c2c1ff"
+          },
+          {
+            "seed": "helix",
+            "light": "#616219",
+            "dark": "#cbcb77"
+          }
+        ],
+        "pairDeltas": [
+          {
+            "a": "vasic-digital",
+            "b": "milosvasic",
+            "de00Light": 42.33,
+            "de00Dark": 41.11,
+            "deOKLight": 0.205
+          },
+          {
+            "a": "vasic-digital",
+            "b": "helix",
+            "de00Light": 20.68,
+            "de00Dark": 21.01,
+            "deOKLight": 0.111
+          },
+          {
+            "a": "milosvasic",
+            "b": "helix",
+            "de00Light": 48.87,
+            "de00Dark": 46.98,
+            "deOKLight": 0.197
+          }
+        ],
+        "minDeltaE00": 20.68,
+        "threshold": 10
+      }
+    },
+    {
+      "dimension": "U2-uniqueness-cam16ucs",
+      "verdict": "PASS",
+      "rationale": "3 seeds produce primaries separated by CAM16-UCS ΔE′ >= 8 in both modes (min 18.09)",
+      "measurements": {
+        "metric": "CAM16-UCS ΔE′ (Euclidean J*a*b*; MCU Cam16, Li et al. 2017)",
+        "primaries": [
+          {
+            "seed": "vasic-digital",
+            "light": "#683a00",
+            "dark": "#ffb872"
+          },
+          {
+            "seed": "milosvasic",
+            "light": "#585799",
+            "dark": "#c2c1ff"
+          },
+          {
+            "seed": "helix",
+            "light": "#616219",
+            "dark": "#cbcb77"
+          }
+        ],
+        "pairDeltas": [
+          {
+            "a": "vasic-digital",
+            "b": "milosvasic",
+            "dEPrimeLight": 43.86,
+            "dEPrimeDark": 40.97,
+            "dECompressedLight": 15.27
+          },
+          {
+            "a": "vasic-digital",
+            "b": "helix",
+            "dEPrimeLight": 20.69,
+            "dEPrimeDark": 18.09,
+            "dECompressedLight": 9.51
+          },
+          {
+            "a": "milosvasic",
+            "b": "helix",
+            "dEPrimeLight": 45.76,
+            "dEPrimeDark": 43.09,
+            "dECompressedLight": 15.68
+          }
+        ],
+        "minDeltaEPrime": 18.09,
+        "threshold": 8
+      },
+      "tags": [
+        "[E]-metric",
+        "[H]-threshold"
+      ],
+      "caveats": [
+        "JND-non-uniform"
+      ]
+    },
+    {
+      "dimension": "A1b-apca",
+      "advisory": true,
+      "verdict": "PASS",
+      "rationale": "all 84 semantic pairs meet their role-appropriate APCA Lc minimum (body>=75, supporting/container>=60, fill/large>=45, non-text>=30) across 3 seeds x2 modes",
+      "measurements": {
+        "metric": "APCA Lc (APCA-W3 0.1.9; qa/lib/apca.mjs, cross-validated vs apca-w3)",
+        "thresholds": {
+          "body": 75,
+          "supporting": 60,
+          "container": 60,
+          "fill-label": 45,
+          "non-text-ui": 30,
+          "fluent-body-informational": 90
+        },
+        "pairsChecked": 84,
+        "rows": [
+          {
+            "seed": "vasic-digital",
+            "mode": "light",
+            "pair": "on-primary/primary",
+            "cls": "fill-label",
+            "Lc": -96.1,
+            "absLc": 96.1,
+            "min": 45,
+            "pass": true
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "light",
+            "pair": "on-secondary/secondary",
+            "cls": "fill-label",
+            "Lc": -96.3,
+            "absLc": 96.3,
+            "min": 45,
+            "pass": true
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "light",
+            "pair": "on-tertiary/tertiary",
+            "cls": "fill-label",
+            "Lc": -96.4,
+            "absLc": 96.4,
+            "min": 45,
+            "pass": true
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "light",
+            "pair": "on-error/error",
+            "cls": "fill-label",
+            "Lc": -94.2,
+            "absLc": 94.2,
+            "min": 45,
+            "pass": true
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "light",
+            "pair": "on-primary-container/primary-container",
+            "cls": "container",
+            "Lc": -77.5,
+            "absLc": 77.5,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "light",
+            "pair": "on-secondary-container/secondary-container",
+            "cls": "container",
+            "Lc": -77.8,
+            "absLc": 77.8,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "light",
+            "pair": "on-tertiary-container/tertiary-container",
+            "cls": "container",
+            "Lc": -77.7,
+            "absLc": 77.7,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "light",
+            "pair": "on-error-container/error-container",
+            "cls": "container",
+            "Lc": -76.3,
+            "absLc": 76.3,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "light",
+            "pair": "on-surface/surface",
+            "cls": "body",
+            "Lc": 100.5,
+            "absLc": 100.5,
+            "min": 75,
+            "pass": true,
+            "fluent90": true
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "light",
+            "pair": "on-surface-variant/surface-variant",
+            "cls": "supporting",
+            "Lc": 75.2,
+            "absLc": 75.2,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "light",
+            "pair": "on-background/background",
+            "cls": "body",
+            "Lc": 100.5,
+            "absLc": 100.5,
+            "min": 75,
+            "pass": true,
+            "fluent90": true
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "light",
+            "pair": "inverse-on-surface/inverse-surface",
+            "cls": "body",
+            "Lc": -93.6,
+            "absLc": 93.6,
+            "min": 75,
+            "pass": true
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "light",
+            "pair": "outline/surface",
+            "cls": "non-text-ui",
+            "Lc": 77.3,
+            "absLc": 77.3,
+            "min": 30,
+            "pass": true
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "light",
+            "pair": "outline/background",
+            "cls": "non-text-ui",
+            "Lc": 77.3,
+            "absLc": 77.3,
+            "min": 30,
+            "pass": true
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "dark",
+            "pair": "on-primary/primary",
+            "cls": "fill-label",
+            "Lc": 70.4,
+            "absLc": 70.4,
+            "min": 45,
+            "pass": true
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "dark",
+            "pair": "on-secondary/secondary",
+            "cls": "fill-label",
+            "Lc": 70.3,
+            "absLc": 70.3,
+            "min": 45,
+            "pass": true
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "dark",
+            "pair": "on-tertiary/tertiary",
+            "cls": "fill-label",
+            "Lc": 70.5,
+            "absLc": 70.5,
+            "min": 45,
+            "pass": true
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "dark",
+            "pair": "on-error/error",
+            "cls": "fill-label",
+            "Lc": 69.3,
+            "absLc": 69.3,
+            "min": 45,
+            "pass": true
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "dark",
+            "pair": "on-primary-container/primary-container",
+            "cls": "container",
+            "Lc": -77.5,
+            "absLc": 77.5,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "dark",
+            "pair": "on-secondary-container/secondary-container",
+            "cls": "container",
+            "Lc": -77.9,
+            "absLc": 77.9,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "dark",
+            "pair": "on-tertiary-container/tertiary-container",
+            "cls": "container",
+            "Lc": -77.7,
+            "absLc": 77.7,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "dark",
+            "pair": "on-error-container/error-container",
+            "cls": "container",
+            "Lc": -76.3,
+            "absLc": 76.3,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "dark",
+            "pair": "on-surface/surface",
+            "cls": "body",
+            "Lc": -100,
+            "absLc": 100,
+            "min": 75,
+            "pass": true,
+            "fluent90": true
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "dark",
+            "pair": "on-surface-variant/surface-variant",
+            "cls": "supporting",
+            "Lc": -60,
+            "absLc": 60,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "dark",
+            "pair": "on-background/background",
+            "cls": "body",
+            "Lc": -88.5,
+            "absLc": 88.5,
+            "min": 75,
+            "pass": true,
+            "fluent90": false
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "dark",
+            "pair": "inverse-on-surface/inverse-surface",
+            "cls": "body",
+            "Lc": 82.5,
+            "absLc": 82.5,
+            "min": 75,
+            "pass": true
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "dark",
+            "pair": "outline/surface",
+            "cls": "non-text-ui",
+            "Lc": -49.7,
+            "absLc": 49.7,
+            "min": 30,
+            "pass": true
+          },
+          {
+            "seed": "vasic-digital",
+            "mode": "dark",
+            "pair": "outline/background",
+            "cls": "non-text-ui",
+            "Lc": -49.7,
+            "absLc": 49.7,
+            "min": 30,
+            "pass": true
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "light",
+            "pair": "on-primary/primary",
+            "cls": "fill-label",
+            "Lc": -87.1,
+            "absLc": 87.1,
+            "min": 45,
+            "pass": true
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "light",
+            "pair": "on-secondary/secondary",
+            "cls": "fill-label",
+            "Lc": -87,
+            "absLc": 87,
+            "min": 45,
+            "pass": true
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "light",
+            "pair": "on-tertiary/tertiary",
+            "cls": "fill-label",
+            "Lc": -87,
+            "absLc": 87,
+            "min": 45,
+            "pass": true
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "light",
+            "pair": "on-error/error",
+            "cls": "fill-label",
+            "Lc": -85.3,
+            "absLc": 85.3,
+            "min": 45,
+            "pass": true
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "light",
+            "pair": "on-primary-container/primary-container",
+            "cls": "container",
+            "Lc": 74.6,
+            "absLc": 74.6,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "light",
+            "pair": "on-secondary-container/secondary-container",
+            "cls": "container",
+            "Lc": 74.7,
+            "absLc": 74.7,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "light",
+            "pair": "on-tertiary-container/tertiary-container",
+            "cls": "container",
+            "Lc": 74.3,
+            "absLc": 74.3,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "light",
+            "pair": "on-error-container/error-container",
+            "cls": "container",
+            "Lc": 72.2,
+            "absLc": 72.2,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "light",
+            "pair": "on-surface/surface",
+            "cls": "body",
+            "Lc": 100.6,
+            "absLc": 100.6,
+            "min": 75,
+            "pass": true,
+            "fluent90": true
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "light",
+            "pair": "on-surface-variant/surface-variant",
+            "cls": "supporting",
+            "Lc": 74.6,
+            "absLc": 74.6,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "light",
+            "pair": "on-background/background",
+            "cls": "body",
+            "Lc": 100.6,
+            "absLc": 100.6,
+            "min": 75,
+            "pass": true,
+            "fluent90": true
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "light",
+            "pair": "inverse-on-surface/inverse-surface",
+            "cls": "body",
+            "Lc": -93.5,
+            "absLc": 93.5,
+            "min": 75,
+            "pass": true
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "light",
+            "pair": "outline/surface",
+            "cls": "non-text-ui",
+            "Lc": 67.7,
+            "absLc": 67.7,
+            "min": 30,
+            "pass": true
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "light",
+            "pair": "outline/background",
+            "cls": "non-text-ui",
+            "Lc": 67.7,
+            "absLc": 67.7,
+            "min": 30,
+            "pass": true
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "dark",
+            "pair": "on-primary/primary",
+            "cls": "fill-label",
+            "Lc": 66.7,
+            "absLc": 66.7,
+            "min": 45,
+            "pass": true
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "dark",
+            "pair": "on-secondary/secondary",
+            "cls": "fill-label",
+            "Lc": 66.5,
+            "absLc": 66.5,
+            "min": 45,
+            "pass": true
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "dark",
+            "pair": "on-tertiary/tertiary",
+            "cls": "fill-label",
+            "Lc": 66.7,
+            "absLc": 66.7,
+            "min": 45,
+            "pass": true
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "dark",
+            "pair": "on-error/error",
+            "cls": "fill-label",
+            "Lc": 64.9,
+            "absLc": 64.9,
+            "min": 45,
+            "pass": true
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "dark",
+            "pair": "on-primary-container/primary-container",
+            "cls": "container",
+            "Lc": -77.2,
+            "absLc": 77.2,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "dark",
+            "pair": "on-secondary-container/secondary-container",
+            "cls": "container",
+            "Lc": -77.4,
+            "absLc": 77.4,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "dark",
+            "pair": "on-tertiary-container/tertiary-container",
+            "cls": "container",
+            "Lc": -77,
+            "absLc": 77,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "dark",
+            "pair": "on-error-container/error-container",
+            "cls": "container",
+            "Lc": -75.1,
+            "absLc": 75.1,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "dark",
+            "pair": "on-surface/surface",
+            "cls": "body",
+            "Lc": -88.6,
+            "absLc": 88.6,
+            "min": 75,
+            "pass": true,
+            "fluent90": false
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "dark",
+            "pair": "on-surface-variant/surface-variant",
+            "cls": "supporting",
+            "Lc": -60.5,
+            "absLc": 60.5,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "dark",
+            "pair": "on-background/background",
+            "cls": "body",
+            "Lc": -88.6,
+            "absLc": 88.6,
+            "min": 75,
+            "pass": true,
+            "fluent90": false
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "dark",
+            "pair": "inverse-on-surface/inverse-surface",
+            "cls": "body",
+            "Lc": 82.6,
+            "absLc": 82.6,
+            "min": 75,
+            "pass": true
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "dark",
+            "pair": "outline/surface",
+            "cls": "non-text-ui",
+            "Lc": -42.1,
+            "absLc": 42.1,
+            "min": 30,
+            "pass": true
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "dark",
+            "pair": "outline/background",
+            "cls": "non-text-ui",
+            "Lc": -42.1,
+            "absLc": 42.1,
+            "min": 30,
+            "pass": true
+          },
+          {
+            "seed": "helix",
+            "mode": "light",
+            "pair": "on-primary/primary",
+            "cls": "fill-label",
+            "Lc": -86.9,
+            "absLc": 86.9,
+            "min": 45,
+            "pass": true
+          },
+          {
+            "seed": "helix",
+            "mode": "light",
+            "pair": "on-secondary/secondary",
+            "cls": "fill-label",
+            "Lc": -87.1,
+            "absLc": 87.1,
+            "min": 45,
+            "pass": true
+          },
+          {
+            "seed": "helix",
+            "mode": "light",
+            "pair": "on-tertiary/tertiary",
+            "cls": "fill-label",
+            "Lc": -87.2,
+            "absLc": 87.2,
+            "min": 45,
+            "pass": true
+          },
+          {
+            "seed": "helix",
+            "mode": "light",
+            "pair": "on-error/error",
+            "cls": "fill-label",
+            "Lc": -85.3,
+            "absLc": 85.3,
+            "min": 45,
+            "pass": true
+          },
+          {
+            "seed": "helix",
+            "mode": "light",
+            "pair": "on-primary-container/primary-container",
+            "cls": "container",
+            "Lc": 74.3,
+            "absLc": 74.3,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "helix",
+            "mode": "light",
+            "pair": "on-secondary-container/secondary-container",
+            "cls": "container",
+            "Lc": 74.6,
+            "absLc": 74.6,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "helix",
+            "mode": "light",
+            "pair": "on-tertiary-container/tertiary-container",
+            "cls": "container",
+            "Lc": 74.5,
+            "absLc": 74.5,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "helix",
+            "mode": "light",
+            "pair": "on-error-container/error-container",
+            "cls": "container",
+            "Lc": 72.2,
+            "absLc": 72.2,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "helix",
+            "mode": "light",
+            "pair": "on-surface/surface",
+            "cls": "body",
+            "Lc": 100.4,
+            "absLc": 100.4,
+            "min": 75,
+            "pass": true,
+            "fluent90": true
+          },
+          {
+            "seed": "helix",
+            "mode": "light",
+            "pair": "on-surface-variant/surface-variant",
+            "cls": "supporting",
+            "Lc": 74.9,
+            "absLc": 74.9,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "helix",
+            "mode": "light",
+            "pair": "on-background/background",
+            "cls": "body",
+            "Lc": 100.4,
+            "absLc": 100.4,
+            "min": 75,
+            "pass": true,
+            "fluent90": true
+          },
+          {
+            "seed": "helix",
+            "mode": "light",
+            "pair": "inverse-on-surface/inverse-surface",
+            "cls": "body",
+            "Lc": -93.3,
+            "absLc": 93.3,
+            "min": 75,
+            "pass": true
+          },
+          {
+            "seed": "helix",
+            "mode": "light",
+            "pair": "outline/surface",
+            "cls": "non-text-ui",
+            "Lc": 67.4,
+            "absLc": 67.4,
+            "min": 30,
+            "pass": true
+          },
+          {
+            "seed": "helix",
+            "mode": "light",
+            "pair": "outline/background",
+            "cls": "non-text-ui",
+            "Lc": 67.4,
+            "absLc": 67.4,
+            "min": 30,
+            "pass": true
+          },
+          {
+            "seed": "helix",
+            "mode": "dark",
+            "pair": "on-primary/primary",
+            "cls": "fill-label",
+            "Lc": 66.8,
+            "absLc": 66.8,
+            "min": 45,
+            "pass": true
+          },
+          {
+            "seed": "helix",
+            "mode": "dark",
+            "pair": "on-secondary/secondary",
+            "cls": "fill-label",
+            "Lc": 66.6,
+            "absLc": 66.6,
+            "min": 45,
+            "pass": true
+          },
+          {
+            "seed": "helix",
+            "mode": "dark",
+            "pair": "on-tertiary/tertiary",
+            "cls": "fill-label",
+            "Lc": 66.6,
+            "absLc": 66.6,
+            "min": 45,
+            "pass": true
+          },
+          {
+            "seed": "helix",
+            "mode": "dark",
+            "pair": "on-error/error",
+            "cls": "fill-label",
+            "Lc": 64.9,
+            "absLc": 64.9,
+            "min": 45,
+            "pass": true
+          },
+          {
+            "seed": "helix",
+            "mode": "dark",
+            "pair": "on-primary-container/primary-container",
+            "cls": "container",
+            "Lc": -77,
+            "absLc": 77,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "helix",
+            "mode": "dark",
+            "pair": "on-secondary-container/secondary-container",
+            "cls": "container",
+            "Lc": -77.2,
+            "absLc": 77.2,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "helix",
+            "mode": "dark",
+            "pair": "on-tertiary-container/tertiary-container",
+            "cls": "container",
+            "Lc": -77.1,
+            "absLc": 77.1,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "helix",
+            "mode": "dark",
+            "pair": "on-error-container/error-container",
+            "cls": "container",
+            "Lc": -75.1,
+            "absLc": 75.1,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "helix",
+            "mode": "dark",
+            "pair": "on-surface/surface",
+            "cls": "body",
+            "Lc": -88.9,
+            "absLc": 88.9,
+            "min": 75,
+            "pass": true,
+            "fluent90": false
+          },
+          {
+            "seed": "helix",
+            "mode": "dark",
+            "pair": "on-surface-variant/surface-variant",
+            "cls": "supporting",
+            "Lc": -60.4,
+            "absLc": 60.4,
+            "min": 60,
+            "pass": true
+          },
+          {
+            "seed": "helix",
+            "mode": "dark",
+            "pair": "on-background/background",
+            "cls": "body",
+            "Lc": -88.9,
+            "absLc": 88.9,
+            "min": 75,
+            "pass": true,
+            "fluent90": false
+          },
+          {
+            "seed": "helix",
+            "mode": "dark",
+            "pair": "inverse-on-surface/inverse-surface",
+            "cls": "body",
+            "Lc": 82.7,
+            "absLc": 82.7,
+            "min": 75,
+            "pass": true
+          },
+          {
+            "seed": "helix",
+            "mode": "dark",
+            "pair": "outline/surface",
+            "cls": "non-text-ui",
+            "Lc": -42.1,
+            "absLc": 42.1,
+            "min": 30,
+            "pass": true
+          },
+          {
+            "seed": "helix",
+            "mode": "dark",
+            "pair": "outline/background",
+            "cls": "non-text-ui",
+            "Lc": -42.1,
+            "absLc": 42.1,
+            "min": 30,
+            "pass": true
+          }
+        ],
+        "fluent90MissesOnPrimaryBody": [
+          {
+            "seed": "vasic-digital",
+            "mode": "dark",
+            "pair": "on-background/background",
+            "Lc": 88.5
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "dark",
+            "pair": "on-surface/surface",
+            "Lc": 88.6
+          },
+          {
+            "seed": "milosvasic",
+            "mode": "dark",
+            "pair": "on-background/background",
+            "Lc": 88.6
+          },
+          {
+            "seed": "helix",
+            "mode": "dark",
+            "pair": "on-surface/surface",
+            "Lc": 88.9
+          },
+          {
+            "seed": "helix",
+            "mode": "dark",
+            "pair": "on-background/background",
+            "Lc": 88.9
+          }
+        ]
+      },
+      "tags": [
+        "[E]-metric",
+        "DRAFT"
+      ],
+      "caveats": [
+        "APCA-draft: additional screen only, never replaces the normative WCAG 2.2 AA gate (D2)"
+      ]
+    },
+    {
+      "dimension": "DET1-determinism",
+      "verdict": "PASS",
+      "rationale": "every seed re-generates byte-identical DTCG tokens and SVG mark (sha256 stable) across 3 seed(s)",
+      "measurements": {
+        "metric": "sha256(canonical DTCG) + sha256(SVG mark), run x2 per seed",
+        "runs": [
+          {
+            "seed": "vasic-digital",
+            "tokensSha256": "b805c32f324d4ca11a9514155f4628444288acf30143ab7619508c558a435058",
+            "tokensStable": true,
+            "markSha256": "a4dd75e76d14cfcb0723595db327425556781391ffa153217f939d037fb52b0b",
+            "markStable": true
+          },
+          {
+            "seed": "milosvasic",
+            "tokensSha256": "3cf8215ccc6b6275750f84662553937f471dde26ad160cc266ba247eadd52c99",
+            "tokensStable": true,
+            "markSha256": "cccfb2ee0907ac48b8003753809d5638b1b5139ee90eda098563847b455ace03",
+            "markStable": true
+          },
+          {
+            "seed": "helix",
+            "tokensSha256": "d3a287fb9361b9c14befb133c50eb6dede2685e2e35aa6ca63b580e430e9c03d",
+            "tokensStable": true,
+            "markSha256": "02394332bb13bfcc9d3a48026740806be6cfc06c98c40c2389a8b301f998d8a8",
+            "markStable": true
+          }
+        ]
+      },
+      "tags": [
+        "[E]"
+      ]
+    }
+  ]
+}
