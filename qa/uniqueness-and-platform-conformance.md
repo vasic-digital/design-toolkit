@@ -20,14 +20,21 @@ without building the runner first**). As of this writing, run-checks.mjs impleme
 validity), D2 (WCAG AA contrast), D7 (hue-delta), U1/D8 (min pairwise ΔE00 ≥10 on primaries),
 U2 (min pairwise CAM16-UCS ΔE′ ≥8 on primaries), U3 (combined weighted DNA-distance ≥0.25 + color
 axis floor — GATING), U4 (type-pair distance ≥0.3 — GATING), U5 (Poisson-disk capacity — RUN but
-reported as a METRIC, never gates), A1b (APCA Lc — RUN but ADVISORY, never gates), and DET1
-(determinism: same seed ⇒ byte-identical token + SVG-mark sha256)** with real assertions.
+reported as a METRIC, never gates), A1b (APCA Lc — RUN but ADVISORY, never gates), DET1
+(determinism: same seed ⇒ byte-identical token + SVG-mark sha256), and C-PLAT platform conformance
+(web + android contrast, and android body-size, RUN + GATING against the emitted tokens;
+UNVERIFIED/secondhand/non-token floors honestly SKIP)** with real assertions.
 Real captured output for all of these lives at
 [`../evidence/qa-run-hardened-checks.txt`](../evidence/qa-run-hardened-checks.txt) (ΔE00, CAM16-UCS
 ΔE′, weighted DNA distance, type-pair distance, capacity, APCA Lc, and determinism hashes — no
 hardcoded numbers); the U3/U4/U5 slice plus its golden-BADs is also captured at
-[`../evidence/qa-uniqueness-extended.txt`](../evidence/qa-uniqueness-extended.txt). Everything still
-marked `SPEC` here (the AUDITOR-side platform / rendered a11y checks) is unproven until its runner
+[`../evidence/qa-uniqueness-extended.txt`](../evidence/qa-uniqueness-extended.txt); the C-PLAT slice
+(clean run + golden-BAD exit-1 proof + per-platform gate/SKIP table) is captured at
+[`../evidence/qa-platform-conformance.txt`](../evidence/qa-platform-conformance.txt). The C-PLAT
+floors live as data in [`platform-metrics.mjs`](platform-metrics.mjs) (each value cites its
+`knowledge/platforms/*.md` source and carries its verification tag verbatim); the runner is
+[`lib/platform.mjs`](lib/platform.mjs). Everything still marked `SPEC`/`AUDITOR` here (rendered
+platform target-size / safe-area / rendered a11y — no token to measure) is unproven until its runner
 exists. Do **not** claim any `SPEC` check passes.
 
 **Load-bearing caveats (carry verbatim, never launder):**
@@ -56,7 +63,7 @@ exists. Do **not** claim any `SPEC` check passes.
 |-----------|----------|--------|
 | **C-UNIQ** — Uniqueness | ≥2 projects on the shared engine read as **distinct brands** in token space | run-checks.mjs (U1/D8 + U2 + U3 + U4 gating; U5 reported metric) |
 | **C-A11Y** — a11y HARD-FAIL | a per-project accessibility **floor** that fails the build the instant it is breached | run-checks.mjs (A1a gating + A1b APCA advisory, token-level) + AUDITOR (A1–A4 rendered) |
-| **C-PLAT** — Platform-conformance | native target-size / type-scale / safe-area / contrast per target platform | AUDITOR + SPEC (per `platforms/*`) |
+| **C-PLAT** — Platform-conformance | per-platform target-size / type-scale / safe-area / contrast | run-checks.mjs (**web + android contrast/body-size RUN + GATING**; UNVERIFIED/secondhand/target-size floors honestly SKIP) + AUDITOR (rendered) |
 | **C-DET** — Determinism | same seed ⇒ **byte-identical** tokens (+ SVG mark) | run-checks.mjs (DET1) — see §5 |
 
 ---
@@ -101,16 +108,24 @@ test-bank + `motion-system-designer` (every role ships its reduced-motion pair).
 
 One assertion set **per target platform**, sourced from `../knowledge/platforms/*`. Values marked
 `[UNVERIFIED]` in the source file inherit the flag here — assert against the documented default and say
-so. All `exec = AUDITOR` (rendered/measured) unless noted `SPEC`.
+so. The **token-level** floors (contrast from the emitted color tokens; body-size from the emitted
+type-scale) are now **RUN** via [`lib/platform.mjs`](lib/platform.mjs) + [`platform-metrics.mjs`](platform-metrics.mjs);
+everything that requires a rendered surface (target-size, safe-area, material fallback, focus) stays
+`AUDITOR`/`SPEC`.
 
-| # | Check | Source (`platforms/*`) | Assertion (examples) |
-|---|-------|------------------------|----------------------|
-| **P1** | **target size** | apple / android-material3 / windows-fluent / web / specialized | iOS/watchOS **≥44pt**; Android **≥48dp** (Wear 48/40[UNVERIFIED]); Fluent **≥40epx base / 44epx touch + 4epx gap**; web **≥24×24 CSS px (AA)**; visionOS **≥60pt angular**; Auto/AAOS **≥64dp**; macOS/GNOME/KDE/RN **no published min → assert system-default sizes, flag [UNVERIFIED]** |
-| **P2** | **type scale** | apple / android-material3 / windows-fluent | iOS body **17pt** + Dynamic Type; Android body **16sp** + font-scale respected; M3 type-scale roles present; Fluent Segoe UI Variable optical grades |
-| **P3** | **safe area / insets** | apple / android-material3 / specialized | iOS notch/Dynamic-Island/home-indicator via `env(safe-area-inset-*)` (not hard-coded); Android edge-to-edge insets; tvOS overscan **90/60pt**, Android-TV **58/28dp[UNVERIFIED]**; Wear percentage margins; foldable hinge via `FoldingFeature` (device-reported) |
-| **P4** | **contrast (platform)** | android-material3 / web / all | text **4.5:1** / large + UI **3:1** on the target; Windows high-contrast theme remap; honors platform reduce-transparency/increase-contrast |
-| **P5** | **material fallback** | apple / windows-fluent / uniqueness-engine §5 | every Liquid Glass / Mica / Acrylic / blur / elevation ships an **opaque/flat/high-contrast** fallback |
-| **P6** | **distraction / focus** (specialized surfaces) | specialized / android-material3 §6 | Automotive glance **≤2s** / task **≤12s**, ≤5 levels; 10-foot + XR focus-engine + no-cursor focus state; TUI 80×24; E-ink no-animation |
+**Honesty rule encoded in the runner:** a floor is asserted (PASS/FAIL, gating) **iff** it is a clean
+first-party `[E]` number **and** derivable from the tokens the generator actually emits. `[E]-secondhand`
+(Apple HIG — indexed, not live-rendered), `[UNVERIFIED]`, and non-token floors (target-size / safe-area)
+are **SKIP with reason** (measured value still reported where knowable) — never a fake PASS.
+
+| # | Check | Source (`platforms/*`) | Assertion (examples) | exec |
+|---|-------|------------------------|----------------------|------|
+| **P1** | **target size** | apple / android-material3 / windows-fluent / web / specialized | iOS/watchOS **≥44pt**; Android **≥48dp** (Wear 48/40[UNVERIFIED]); Fluent **≥40epx base / 44epx touch + 4epx gap**; web **≥24×24 CSS px (AA)**; visionOS **≥60pt angular**; Auto/AAOS **≥64dp**; macOS/GNOME/KDE/RN **no published min → [UNVERIFIED]** | **SKIP** (no target-size token emitted → AUDITOR/rendered; all values kept in `platform-metrics.mjs` with source+tag) |
+| **P2** | **type scale (body size)** | apple / android-material3 / windows-fluent | Android body **≥16sp** (clean [E]); iOS body **17pt** ([E]-secondhand); M3 type-scale roles present; Fluent optical grades | **RUN (android body ≥16sp — GATING)**; iOS 17pt measured but **SKIP** (secondhand); rendered Dynamic-Type/optical-grade = AUDITOR |
+| **P3** | **safe area / insets** | apple / android-material3 / specialized | iOS notch/Dynamic-Island/home-indicator via `env(safe-area-inset-*)`; Android edge-to-edge; tvOS overscan **90/60pt**, Android-TV **58/28dp[UNVERIFIED]**; Wear % margins; foldable hinge via `FoldingFeature` | **SKIP** (no safe-area token emitted → AUDITOR/rendered) |
+| **P4** | **contrast (platform)** | android-material3 / web / all | text **4.5:1** / large + UI **3:1** on the target; Windows high-contrast remap; honors reduce-transparency/increase-contrast | **RUN (web + android, both modes — GATING)** from the emitted color tokens; Windows high-contrast remap = AUDITOR |
+| **P5** | **material fallback** | apple / windows-fluent / uniqueness-engine §5 | every Liquid Glass / Mica / Acrylic / blur / elevation ships an **opaque/flat/high-contrast** fallback | **AUDITOR/SPEC** (rendered) |
+| **P6** | **distraction / focus** (specialized surfaces) | specialized / android-material3 §6 | Automotive glance **≤2s** / task **≤12s**, ≤5 levels; 10-foot + XR focus-engine; TUI 80×24; E-ink no-animation | **AUDITOR/SPEC** (rendered); note AAOS **font ≥24sp** is a clean [E] token floor — `--platforms auto` asserts it (a generic non-driving token set honestly FAILs it) |
 
 ## 5. C-DET — Determinism
 
@@ -178,7 +193,10 @@ A uniqueness/conformance suite is only trustworthy if a **deliberately broken** 
 - **CM-DESIGN-A11Y-FLOOR** (blocking): C-A11Y **A1a == 100%** (RUN token-level + AUDITOR rendered);
   A2–A4 blocking via the auditor harness. **A1b (APCA) is RUN but ADVISORY — it is measured and
   reported, but never gates (draft/secondary never gates alone).**
-- **CM-DESIGN-PLATFORM** (blocking per shipped platform): C-PLAT P1–P5 PASS for each target.
+- **CM-DESIGN-PLATFORM** (blocking per shipped platform): C-PLAT P1–P5 PASS for each target. **Token-level
+  today (RUN + gating in run-checks.mjs):** P4 contrast (web + android) and P2 body-size (android ≥16sp).
+  UNVERIFIED/secondhand/non-token floors (target-size P1, safe-area P3, material P5, focus P6) honestly
+  **SKIP** (advisory) pending the AUDITOR rendered harness — they do not gate until that runner exists.
 - **CM-DESIGN-DETERMINISM** (blocking): C-DET DET1 byte-identical (RUN in run-checks.mjs).
 - **Draft/secondary never gate alone:** APCA (A1b) is advisory; pilot MCPs don't gate (INSTALL.md §3).
   Playwright `toHaveScreenshot` + Chrome DevTools Lighthouse + run-checks.mjs are the gate-grade tools.
@@ -200,7 +218,7 @@ _tests/evidence/design-toolkit/<run-id>/
 │   ├── type-metrics.json             # A2/A3 body-size/measure/line-height
 │   └── reduced-motion/*.png          # A4 collapse goldens
 ├── platform/<platform>/
-│   ├── conformance.json              # P1–P6 assertions (with [UNVERIFIED] flags preserved)
+│   ├── conformance.json              # P1–P6 assertions (token-level P2/P4 RUN via lib/platform.mjs; [UNVERIFIED]/secondhand flags preserved; rendered P1/P3/P5/P6 = AUDITOR)
 │   └── goldens/*.png                 # rendered per-platform proof (web/PWA via chrome-devtools)
 └── determinism/
     ├── tokens.sha256                 # DET1 hash, run A vs run B
@@ -215,10 +233,18 @@ Executable **today** in [`run-checks.mjs`](run-checks.mjs) with real assertions 
 [`../evidence/qa-uniqueness-extended.txt`](../evidence/qa-uniqueness-extended.txt)): **U1/D8 (ΔE00),
 U2 (CAM16-UCS ΔE′ via the pinned material-color-utilities), U3 (weighted DNA-distance ≥0.25 + color
 floor — gating), U4 (type-pair distance ≥0.3 — gating), U5 (Poisson-disk capacity — reported metric),
-A1a (token-level WCAG AA contrast), A1b (APCA Lc — advisory), and DET1 (determinism)**; the base
+A1a (token-level WCAG AA contrast), A1b (APCA Lc — advisory), DET1 (determinism), and **C-PLAT
+platform conformance** — web + android **contrast** and android **body-size (≥16sp)** RUN + GATING
+against the emitted tokens ([`platform-metrics.mjs`](platform-metrics.mjs) floors +
+[`lib/platform.mjs`](lib/platform.mjs) runner; captured in
+[`../evidence/qa-platform-conformance.txt`](../evidence/qa-platform-conformance.txt))**; the base
 [`design-qa-testbank.md`](design-qa-testbank.md) covers the rendered D1–D7. The U3/U4 golden-BADs are
 proven: a forced type-collision (two color-distinct seeds sharing a font pair) flips **U4** to FAIL
-with exit 1 while U1/U2/U3 stay PASS, and two identical seeds flip **U3** (and U4) to FAIL. Still
-**SPEC** (no runner yet): the AUDITOR-side platform + rendered a11y-floor assertions. Wiring the
-remaining CM gates is a **next-checkpoint** task — **do not report a SPEC check as PASS until its
-runner exists.**
+with exit 1 while U1/U2/U3 stay PASS, and two identical seeds flip **U3** (and U4) to FAIL. The
+**C-PLAT golden-BAD** is proven too: a token set with body-large 12px (< 16sp) and a collapsed
+on-primary/primary contrast pair (< 4.5:1) flips **C-PLAT web** (contrast) and **C-PLAT android**
+(contrast + body) to FAIL with **exit 1** (`qa/fixtures/golden-bad-platform.tokens.json`), while
+UNVERIFIED/secondhand platforms (iOS/visionOS/macOS/GNOME/RN) honestly **SKIP** (advisory, never
+gate). Still **AUDITOR/SPEC** (no runner yet): the rendered platform floors (target-size, safe-area,
+material fallback, focus) and rendered a11y — no token to measure. Wiring those remaining CM gates is
+a **next-checkpoint** task — **do not report a SPEC check as PASS until its runner exists.**

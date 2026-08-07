@@ -12,6 +12,7 @@ import { evaluateScheme, oklchHue, hueDelta } from "../lib/color.mjs";
 import { typePairDistance } from "../../qa/lib/typedna.mjs";
 import { dnaDistanceBetween } from "../../qa/lib/dnadist.mjs";
 import { deltaE00 } from "../../qa/lib/deltae.mjs";
+import { checkPlatformConformance } from "../../qa/lib/platform.mjs";
 
 const SEEDS = ["vasic-digital", "milosvasic", "helix"];
 const sha = (s) => createHash("sha256").update(s).digest("hex");
@@ -116,4 +117,62 @@ test("U3: weighted DNA distance >=0.25 across seeds; identical seed => 0", () =>
   }
   // golden-BAD: identical vector + zero color distance => distance 0
   assert.equal(dnaDistanceBetween(vs[0].v, vs[0].v, 0).distance, 0);
+});
+
+// --- C-PLAT platform conformance (qa/lib/platform.mjs) -----------------------
+
+test("C-PLAT web: WCAG 2.2 contrast is a real GATING check that PASSes for every seed", () => {
+  for (const seed of SEEDS) {
+    const doc = generateTokens(seed).document;
+    const r = checkPlatformConformance(doc, "web");
+    assert.equal(r.gating, true, "web must gate (clean [E] WCAG 2.2 floor)");
+    assert.equal(r.verdict, "PASS", `web C-PLAT ${seed}: ${JSON.stringify(r.checks)}`);
+    const contrast = r.checks.find((c) => c.metric === "contrast");
+    assert.equal(contrast.status, "PASS");
+    assert.ok(contrast.measured.minText >= 4.5, `web min text contrast ${contrast.measured.minText} < 4.5`);
+    // target size is [E] but not emitted as a token — must SKIP, never PASS.
+    const target = r.checks.find((c) => c.metric === "targetSizePx");
+    assert.equal(target.status, "SKIP", "web target-size must SKIP (no token), not PASS");
+  }
+});
+
+test("C-PLAT android: contrast + body-size (16sp) are real GATING checks that PASS", () => {
+  const doc = generateTokens("vasic-digital").document;
+  const r = checkPlatformConformance(doc, "android");
+  assert.equal(r.gating, true);
+  assert.equal(r.verdict, "PASS");
+  const body = r.checks.find((c) => c.metric === "bodyFontMin");
+  assert.equal(body.status, "PASS");
+  assert.ok(body.measured.bodyLargePx >= 16, `android body ${body.measured.bodyLargePx}px < 16sp floor`);
+});
+
+test("C-PLAT golden-BAD: body < floor and contrast < 4.5 FAIL web + android gates", () => {
+  const doc = generateTokens("vasic-digital").document;
+  // MUTATION 1: body running text below the Android 16sp floor.
+  doc.typography["type-scale"]["body-large"].$value.value = 12;
+  // MUTATION 2: collapse an on-primary/primary pair below WCAG 4.5:1.
+  doc.color.light["on-primary"].$value = doc.color.light["primary"].$value;
+
+  const web = checkPlatformConformance(doc, "web");
+  assert.equal(web.verdict, "FAIL", "golden-bad must FAIL web (contrast)");
+  assert.equal(web.gating, true);
+  assert.equal(web.checks.find((c) => c.metric === "contrast").status, "FAIL");
+
+  const android = checkPlatformConformance(doc, "android");
+  assert.equal(android.verdict, "FAIL", "golden-bad must FAIL android (contrast + body)");
+  assert.equal(android.checks.find((c) => c.metric === "contrast").status, "FAIL");
+  assert.equal(android.checks.find((c) => c.metric === "bodyFontMin").status, "FAIL");
+});
+
+test("C-PLAT honesty: UNVERIFIED/secondhand platforms SKIP (advisory), never fake a PASS", () => {
+  const doc = generateTokens("vasic-digital").document;
+  for (const platform of ["ios", "visionos", "macos", "gnome", "react-native"]) {
+    const r = checkPlatformConformance(doc, platform);
+    assert.equal(r.gating, false, `${platform} must not gate (no clean token-checkable [E] floor)`);
+    assert.equal(r.verdict, "SKIP", `${platform} must SKIP, got ${r.verdict}`);
+    // no check may be a PASS for these (nothing gateable is asserted)
+    assert.ok(!r.checks.some((c) => c.status === "PASS"), `${platform} must not report a PASS`);
+    // every check carries a reason
+    for (const c of r.checks) assert.ok(c.reason, `${platform}.${c.metric} SKIP needs a reason`);
+  }
 });

@@ -1,0 +1,96 @@
+==============================================================================
+ C-PLAT — Platform-Conformance HelixQA — captured evidence (real run output)
+ Runner: qa/run-checks.mjs + qa/lib/platform.mjs + qa/platform-metrics.mjs
+ Floors extracted faithfully from knowledge/platforms/*.md (tags preserved).
+ Static filename, no Date.now — deterministic re-capture.
+==============================================================================
+
+############################################################################
+# SECTION A — CLEAN RUN (default seeds/platforms). C-PLAT web+android GATE.
+#   $ node qa/run-checks.mjs
+############################################################################
+
+C-PLAT web (Web (WCAG 2.2 / MDN)): PASS
+   - PASS contrast [E]: minText 4.65:1 / minUi 5.88:1 vs floor text 4.5 / ui 3 [web.md §3 (WCAG 2.2 SC 1.4.3 text 4.5:1 / large 3:1; SC 1.4.11 non-text 3:1)]
+   - SKIP targetSizePx [E]: generator emits no interactive/target-size token — rendered/component concern (C-PLAT P1 = AUDITOR)
+C-PLAT android (Android (Material 3)): PASS
+   - PASS contrast [E]: minText 4.65:1 / minUi 5.88:1 vs floor text 4.5 / ui 3 [android-material3.md §1 (text/icons 4.5:1, large & UI/graphics 3:1)]
+   - PASS bodyFontMin [E]: bodyLarge 18px vs floor 16 sp (≈px @ font-scale 1.0) [android-material3.md §3 (Body 16/14/12 L/M/S) + m3 type-scale-tokens]
+   - SKIP targetSizePx [E]: generator emits no interactive/target-size token — rendered/component concern (AUDITOR)
+C-PLAT ios (iOS / iPadOS (HIG)): SKIP — advisory (no gateable [E] floor)
+   - SKIP bodyFontMin [E]-secondhand: Apple HIG numbers are Google-indexed secondhand (apple.md header caveat) — measured & reported, not gated; re-verify on-device (AUDITOR) (measured bodyLarge 18px)
+   - SKIP targetSizePx [E]-secondhand: no target-size token emitted AND Apple values secondhand — AUDITOR / on-device
+C-PLAT visionos (visionOS (HIG)): SKIP — advisory (no gateable [E] floor)
+   - SKIP targetSizePx [E]-secondhand: angular target size, no target-size token emitted AND Apple values secondhand — AUDITOR / on-device
+
+OVERALL: PASS (advisory, not gated: U5-capacity-report=REPORT, A1b-apca=PASS, C-PLAT-ios=SKIP, C-PLAT-visionos=SKIP)
+
+run-checks OVERALL exit code (SECTION A) = 0   (0 = all gating checks PASS)
+
+############################################################################
+# SECTION B — GOLDEN-BAD anti-bluff proof. A token set with body-large 12px
+#   (< Android 16sp) and on-primary/primary contrast collapsed (< 4.5:1)
+#   MUST fail C-PLAT web (contrast) + android (contrast+body) with exit 1.
+#   $ node qa/run-checks.mjs --tokens qa/fixtures/golden-bad-platform.tokens.json
+############################################################################
+
+C-PLAT web (Web (WCAG 2.2 / MDN)): FAIL
+   - FAIL contrast [E]: minText 1:1 / minUi 5.88:1 vs floor text 4.5 / ui 3 [web.md §3 (WCAG 2.2 SC 1.4.3 text 4.5:1 / large 3:1; SC 1.4.11 non-text 3:1)]
+       · FAIL light on-primary/primary = 1:1 < 4.5:1
+   - SKIP targetSizePx [E]: generator emits no interactive/target-size token — rendered/component concern (C-PLAT P1 = AUDITOR)
+C-PLAT android (Android (Material 3)): FAIL
+   - FAIL contrast [E]: minText 1:1 / minUi 5.88:1 vs floor text 4.5 / ui 3 [android-material3.md §1 (text/icons 4.5:1, large & UI/graphics 3:1)]
+       · FAIL light on-primary/primary = 1:1 < 4.5:1
+   - FAIL bodyFontMin [E]: bodyLarge 12px vs floor 16 sp (≈px @ font-scale 1.0) [android-material3.md §3 (Body 16/14/12 L/M/S) + m3 type-scale-tokens]
+   - SKIP targetSizePx [E]: generator emits no interactive/target-size token — rendered/component concern (AUDITOR)
+C-PLAT ios (iOS / iPadOS (HIG)): SKIP — advisory (no gateable [E] floor)
+   - SKIP bodyFontMin [E]-secondhand: Apple HIG numbers are Google-indexed secondhand (apple.md header caveat) — measured & reported, not gated; re-verify on-device (AUDITOR) (measured bodyLarge 12px)
+   - SKIP targetSizePx [E]-secondhand: no target-size token emitted AND Apple values secondhand — AUDITOR / on-device
+C-PLAT visionos (visionOS (HIG)): SKIP — advisory (no gateable [E] floor)
+   - SKIP targetSizePx [E]-secondhand: angular target size, no target-size token emitted AND Apple values secondhand — AUDITOR / on-device
+
+OVERALL: FAIL (advisory, not gated: U5-capacity-report=REPORT, A1b-apca=PASS, C-PLAT-ios=SKIP, C-PLAT-visionos=SKIP)
+
+run-checks OVERALL exit code (SECTION B, golden-bad) = 1   (1 = gating FAIL, as required)
+
+############################################################################
+# SECTION C — What is RUN+GATING vs honestly SKIP (per platform-metrics.mjs)
+############################################################################
+
+GATEABLE platforms (>=1 clean [E] floor derivable from emitted tokens): web, android, auto
+
+  web — Web (WCAG 2.2 / MDN)
+    contrast      [E]             GATE  web.md §3 (WCAG 2.2 SC 1.4.3 text 4.5:1 / large 3:1; SC 1.4.11 non-text 3:1)
+    targetSizePx  [E]             SKIP  web.md §3 (WCAG 2.2 SC 2.5.8 AA; 44 = AAA SC 2.5.5)
+  android — Android (Material 3)
+    contrast      [E]             GATE  android-material3.md §1 (text/icons 4.5:1, large & UI/graphics 3:1)
+    bodyFontMin   [E]             GATE  android-material3.md §3 (Body 16/14/12 L/M/S) + m3 type-scale-tokens
+    targetSizePx  [E]             SKIP  android-material3.md §1 (minimum touch target 48×48 dp)
+  ios — iOS / iPadOS (HIG)
+    bodyFontMin   [E]-secondhand  SKIP  apple.md §2 (Body text 17pt Dynamic Type default)
+    targetSizePx  [E]-secondhand  SKIP  apple.md §2 (minimum touch target 44×44 pt)
+  watchos — watchOS (HIG)
+    targetSizePx  [E]-secondhand  SKIP  apple.md §3 (minimum tap target 44 pt)
+  tvos — tvOS (HIG)
+    safeArea      [E]-secondhand  SKIP  apple.md §4 (overscan safe margins 90pt horizontal / 60pt vertical)
+  visionos — visionOS (HIG)
+    targetSizePx  [E]-secondhand  SKIP  apple.md §5 (minimum target 60pt, angular)
+  macos — macOS (HIG)
+    targetSizePx  [UNVERIFIED]    SKIP  apple.md §6 (no published numeric minimum — [UNVERIFIED])
+  windows — Windows (Fluent 2)
+    targetSizePx  [E]             SKIP  windows-fluent.md §2 (base 40×40 epx; touch 44×44 epx + ≥4 epx spacing)
+  gnome — GNOME (Adwaita / libadwaita / GTK4)
+    targetSizePx  [UNVERIFIED]    SKIP  linux-desktop.md §1 (no published numeric minimum touch target — [UNVERIFIED])
+  kde — KDE (Breeze / Kirigami)
+    targetSizePx  [UNVERIFIED]    SKIP  linux-desktop.md §2 (no published numeric minimum touch target — [UNVERIFIED]; gridUnit 18px)
+  wear — Wear OS
+    targetSizePx  [UNVERIFIED]    SKIP  android-material3.md §4 (48dp recommended / 40dp minimum [UNVERIFIED])
+  androidtv — Android TV
+    safeArea      [UNVERIFIED]    SKIP  android-material3.md §5 (overscan 58dp horizontal / 28dp vertical [UNVERIFIED])
+  auto — Android Auto / AAOS (driving-optimized)
+    bodyFontMin   [E]             GATE  android-material3.md §6 (driving-optimized font ≥ 24 sp)
+    targetSizePx  [E]             SKIP  android-material3.md §6 (driving-optimized targets ≥ 64 dp, spacing ≥ 24 dp)
+  flutter — Flutter
+    targetSizePx  [E]             SKIP  cross-platform.md §1 (targets ≥ 48 logical px, follows Material 48dp)
+  react-native — React Native
+    targetSizePx  [UNVERIFIED]    SKIP  cross-platform.md §2 (no minimum touch-target size stated — [UNVERIFIED]; enforce target platform's)

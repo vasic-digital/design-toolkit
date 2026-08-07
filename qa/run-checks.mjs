@@ -11,6 +11,10 @@
 //   U3   combined weighted DNA-distance (min pairwise D=sqrt(Σwᵢd̂ᵢ²) >= 0.25 AND color axis clears its ΔE00 floor)
 //   U4   type-pair distance             (min pairwise display+body face-feature distance >= 0.3)
 //   DET1 determinism                    (same seed twice -> byte-identical token + mark hash)
+//   CPLAT C-PLAT platform conformance  (per-platform metric floors from
+//        knowledge/platforms/*.md; web + android contrast/body-size are RUN +
+//        GATING — real [E] floors; UNVERIFIED / secondhand / target-size floors
+//        honestly SKIP with reason. See qa/platform-metrics.mjs + qa/lib/platform.mjs)
 // ADVISORY checks (RUN + measured, but NEVER gate — reported for information):
 //   A1b  APCA Lc                        (perceptual contrast; DRAFT/WCAG3, additional screen only)
 //   U5   Poisson-disk capacity report   (remaining blue-noise capacity at r=D_min; a METRIC, not a gate)
@@ -24,8 +28,11 @@
 // material-color-utilities Cam16 (Li et al. 2017); APCA Lc in qa/lib/apca.mjs
 // is a faithful APCA-W3 0.1.9 implementation (cross-validated vs apca-w3).
 // U3 (DNA-distance), U4 (type-pair) are now RUN + gating; U5 (capacity) is RUN
-// but reported as a METRIC (never gates). Still SPEC (no runner yet): the
-// AUDITOR-side platform / rendered a11y checks — see
+// but reported as a METRIC (never gates). C-PLAT platform conformance is now RUN:
+// web + android contrast (and android body-size) are real GATING [E] checks
+// against the emitted tokens; UNVERIFIED/secondhand/target-size floors honestly
+// SKIP (advisory). Still AUDITOR-only (rendered, no token to measure): platform
+// target-size / safe-area / rendered a11y — see
 // qa/uniqueness-and-platform-conformance.md.
 //
 // Usage:
@@ -51,6 +58,7 @@ import { apcaLc } from "./lib/apca.mjs";
 import { deriveVector } from "../generators/lib/tokens.mjs";
 import { typePairDistance } from "./lib/typedna.mjs";
 import { axisSubDistances, dnaDistance, DNA_WEIGHTS, COLOR_ANCHOR, poissonCapacityReport } from "./lib/dnadist.mjs";
+import { checkPlatformConformance } from "./lib/platform.mjs";
 
 function parseArgs(argv) {
   const args = {
@@ -61,6 +69,9 @@ function parseArgs(argv) {
     cam16Threshold: 8, // research U2 [E]: min pairwise CAM16-UCS ΔE′ on primaries
     dnaThreshold: 0.25, // U3 [H]: min pairwise weighted DNA distance (Poisson r)
     typeThreshold: 0.3, // U4 [H]: min pairwise type-pair distance
+    // C-PLAT target platforms. web+android carry gateable [E] floors; ios+visionos
+    // are included to exercise the honest SKIP path (secondhand / non-token floors).
+    platforms: ["web", "android", "ios", "visionos"],
   };
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
@@ -71,8 +82,9 @@ function parseArgs(argv) {
     else if (a === "--cam16-threshold") args.cam16Threshold = parseFloat(argv[++i]);
     else if (a === "--dna-threshold") args.dnaThreshold = parseFloat(argv[++i]);
     else if (a === "--type-threshold") args.typeThreshold = parseFloat(argv[++i]);
+    else if (a === "--platforms") args.platforms = (argv[++i] || "").split(",").map((s) => s.trim()).filter(Boolean);
     else if (a === "--help" || a === "-h") {
-      process.stdout.write("Usage: node run-checks.mjs [--tokens tokens.json] [--seeds a,b,c] [--hue-threshold 15] [--de00-threshold 10] [--cam16-threshold 8] [--dna-threshold 0.25] [--type-threshold 0.3]\n");
+      process.stdout.write("Usage: node run-checks.mjs [--tokens tokens.json] [--seeds a,b,c] [--hue-threshold 15] [--de00-threshold 10] [--cam16-threshold 8] [--dna-threshold 0.25] [--type-threshold 0.3] [--platforms web,android,ios,visionos]\n");
       process.exit(0);
     }
   }
@@ -471,6 +483,54 @@ dimensions.push({
 });
 log(`DET1 determinism: ${detAllStable ? "PASS" : "FAIL"} (same seed -> byte-identical token+mark hash, ${args.seeds.length} seeds)`);
 for (const d of detRows) log(`   - ${d.seed}: tokens ${d.tokensSha256.slice(0, 12)}… (${d.tokensStable ? "stable" : "DRIFT"}), mark ${d.markSha256.slice(0, 12)}… (${d.markStable ? "stable" : "DRIFT"})`);
+
+// --- C-PLAT: platform conformance (per target platform) ----------------------
+// For each target platform, assert the token set under test against the platform's
+// machine-checkable metric floors (qa/platform-metrics.mjs, sourced from
+// knowledge/platforms/*.md). A platform GATES only when it carries at least one
+// clean first-party [E] floor that is derivable from the emitted tokens (web +
+// android contrast, android body-size). Platforms whose floors are UNVERIFIED,
+// secondhand, or non-token (target-size / safe-area) honestly SKIP with reason
+// and are advisory (never gate). The measured value is reported even on SKIP so
+// nothing is hidden — anti-bluff.
+for (const platform of args.platforms) {
+  const r = checkPlatformConformance(doc, platform);
+  const asserted = r.checks.filter((c) => c.status === "PASS" || c.status === "FAIL");
+  const skipped = r.checks.filter((c) => c.status === "SKIP");
+  dimensions.push({
+    dimension: `C-PLAT-${platform}`,
+    // SKIP platforms (no assertable floor today) are advisory — they must not gate.
+    advisory: !r.gating,
+    verdict: r.verdict,
+    platform,
+    rationale: r.gating
+      ? (r.verdict === "PASS"
+          ? `${r.label}: ${asserted.length} gateable [E] floor(s) satisfied (${asserted.map((c) => c.metric).join(", ")}); ${skipped.length} non-token/UNVERIFIED/secondhand floor(s) SKIPPED with reason`
+          : `${r.label}: ${asserted.filter((c) => c.status === "FAIL").length} gateable [E] floor(s) BREACHED (${asserted.filter((c) => c.status === "FAIL").map((c) => c.metric).join(", ")})`)
+      : `${r.label}: no assertable [E] floor derivable from the emitted token set today — all ${skipped.length} documented floor(s) SKIPPED with reason (advisory, never gates)`,
+    measurements: { platform, label: r.label, gating: r.gating, checks: r.checks },
+    tags: ["[E]-web-android-gated", "[E]-secondhand/[UNVERIFIED]-skipped"],
+    caveats: [
+      "platform-metric-UNVERIFIED and [E]-secondhand tags preserved from knowledge/platforms/* — never laundered to confirmed",
+      "target-size / safe-area floors are not emitted as tokens (rendered/component = AUDITOR) — SKIP, not PASS",
+    ],
+  });
+  log(`C-PLAT ${platform} (${r.label}): ${r.verdict}${r.gating ? "" : " — advisory (no gateable [E] floor)"}`);
+  for (const c of r.checks) {
+    if (c.status === "PASS" || c.status === "FAIL") {
+      const m = c.metric === "contrast"
+        ? `minText ${c.measured.minText}:1 / minUi ${c.measured.minUi}:1 vs floor text ${c.floor.text} / ui ${c.floor.ui}`
+        : `bodyLarge ${c.measured.bodyLargePx}px vs floor ${c.floor.min}${c.floor.unit ? " " + c.floor.unit : ""}`;
+      log(`   - ${c.status} ${c.metric} ${c.tag}: ${m} [${c.source}]`);
+      if (c.status === "FAIL" && c.metric === "contrast") {
+        for (const f of c.measured.fails) log(`       · FAIL ${f.mode} ${f.pair} = ${f.ratio}:1 < ${f.floor}:1`);
+      }
+    } else {
+      const val = c.metric === "bodyFontMin" && c.measured ? ` (measured bodyLarge ${c.measured.bodyLargePx}px)` : "";
+      log(`   - SKIP ${c.metric} ${c.tag}: ${c.reason}${val}`);
+    }
+  }
+}
 
 // --- Overall verdict (advisory checks excluded from the gate) ----------------
 const gatingDims = dimensions.filter((d) => !d.advisory);

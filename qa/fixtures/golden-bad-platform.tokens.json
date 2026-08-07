@@ -1,0 +1,584 @@
+{
+  "$description": "GOLDEN-BAD platform fixture: body-large 12px (< Android 16sp) + on-primary/primary contrast collapsed (< 4.5:1). Must FAIL C-PLAT web (contrast) and android (contrast+body).",
+  "$extensions": {
+    "digital.vasic.provenance": {
+      "seed": "vasic-digital",
+      "adjectives": [],
+      "vector": {
+        "seedHue": 63,
+        "mcuVariant": "Rainbow",
+        "harmonyRule": "mono",
+        "typeRatio": 1.333,
+        "spaceMultiplier": 1,
+        "radiusBase": 8,
+        "contrastMode": "premium-dark",
+        "fontPairId": "editorial-serif",
+        "motionIntensity": 0.85,
+        "depthLevel": 2
+      },
+      "generatorVersion": "1.0.0"
+    }
+  },
+  "color": {
+    "$type": "color",
+    "light": {
+      "primary": {
+        "$value": "#683a00"
+      },
+      "on-primary": {
+        "$value": "#683a00"
+      },
+      "primary-container": {
+        "$value": "#aa6305"
+      },
+      "on-primary-container": {
+        "$value": "#ffffff"
+      },
+      "secondary": {
+        "$value": "#57412b"
+      },
+      "on-secondary": {
+        "$value": "#ffffff"
+      },
+      "secondary-container": {
+        "$value": "#8b6f57"
+      },
+      "on-secondary-container": {
+        "$value": "#ffffff"
+      },
+      "tertiary": {
+        "$value": "#404922"
+      },
+      "on-tertiary": {
+        "$value": "#ffffff"
+      },
+      "tertiary-container": {
+        "$value": "#6f794d"
+      },
+      "on-tertiary-container": {
+        "$value": "#ffffff"
+      },
+      "error": {
+        "$value": "#900009"
+      },
+      "on-error": {
+        "$value": "#ffffff"
+      },
+      "error-container": {
+        "$value": "#da342e"
+      },
+      "on-error-container": {
+        "$value": "#ffffff"
+      },
+      "background": {
+        "$value": "#f9f9f9"
+      },
+      "on-background": {
+        "$value": "#1b1b1b"
+      },
+      "surface": {
+        "$value": "#f9f9f9"
+      },
+      "on-surface": {
+        "$value": "#1b1b1b"
+      },
+      "surface-variant": {
+        "$value": "#e2e2e2"
+      },
+      "on-surface-variant": {
+        "$value": "#454545"
+      },
+      "surface-container-lowest": {
+        "$value": "#ffffff"
+      },
+      "surface-container-low": {
+        "$value": "#f3f3f3"
+      },
+      "surface-container": {
+        "$value": "#eaeaea"
+      },
+      "surface-container-high": {
+        "$value": "#e1e1e1"
+      },
+      "surface-container-highest": {
+        "$value": "#d8d8d8"
+      },
+      "inverse-surface": {
+        "$value": "#303030"
+      },
+      "inverse-on-surface": {
+        "$value": "#f1f1f1"
+      },
+      "inverse-primary": {
+        "$value": "#ffb872"
+      },
+      "outline": {
+        "$value": "#616161"
+      },
+      "outline-variant": {
+        "$value": "#898989"
+      },
+      "scrim": {
+        "$value": "#000000"
+      },
+      "shadow": {
+        "$value": "#000000"
+      },
+      "surface-tint": {
+        "$value": "#8c5000"
+      }
+    },
+    "dark": {
+      "primary": {
+        "$value": "#ffb872"
+      },
+      "on-primary": {
+        "$value": "#341b00"
+      },
+      "primary-container": {
+        "$value": "#aa6304"
+      },
+      "on-primary-container": {
+        "$value": "#ffffff"
+      },
+      "secondary": {
+        "$value": "#e2c0a4"
+      },
+      "on-secondary": {
+        "$value": "#2f1d0a"
+      },
+      "secondary-container": {
+        "$value": "#8a6f57"
+      },
+      "on-secondary-container": {
+        "$value": "#ffffff"
+      },
+      "tertiary": {
+        "$value": "#c1cc99"
+      },
+      "on-tertiary": {
+        "$value": "#1c2403"
+      },
+      "tertiary-container": {
+        "$value": "#6f794d"
+      },
+      "on-tertiary-container": {
+        "$value": "#ffffff"
+      },
+      "error": {
+        "$value": "#ffb4ab"
+      },
+      "on-error": {
+        "$value": "#4b0002"
+      },
+      "error-container": {
+        "$value": "#da342e"
+      },
+      "on-error-container": {
+        "$value": "#ffffff"
+      },
+      "background": {
+        "$value": "#131313"
+      },
+      "on-background": {
+        "$value": "#e2e2e2"
+      },
+      "surface": {
+        "$value": "#131313"
+      },
+      "on-surface": {
+        "$value": "#f4f4f4"
+      },
+      "surface-variant": {
+        "$value": "#474747"
+      },
+      "on-surface-variant": {
+        "$value": "#c6c6c6"
+      },
+      "surface-container-lowest": {
+        "$value": "#0a0a0a"
+      },
+      "surface-container-low": {
+        "$value": "#1d1d1d"
+      },
+      "surface-container": {
+        "$value": "#242424"
+      },
+      "surface-container-high": {
+        "$value": "#2f2f2f"
+      },
+      "surface-container-highest": {
+        "$value": "#3a3a3a"
+      },
+      "inverse-surface": {
+        "$value": "#e2e2e2"
+      },
+      "inverse-on-surface": {
+        "$value": "#303030"
+      },
+      "inverse-primary": {
+        "$value": "#7a4500"
+      },
+      "outline": {
+        "$value": "#9f9f9f"
+      },
+      "outline-variant": {
+        "$value": "#747474"
+      },
+      "scrim": {
+        "$value": "#000000"
+      },
+      "shadow": {
+        "$value": "#000000"
+      },
+      "surface-tint": {
+        "$value": "#ffb872"
+      }
+    }
+  },
+  "dimension": {
+    "space": {
+      "$type": "dimension",
+      "3xs": {
+        "$value": {
+          "value": 5,
+          "unit": "px"
+        },
+        "$type": "dimension",
+        "$extensions": {
+          "digital.vasic.fluid": "clamp(0.25rem, 0.2283rem + 0.1087vw, 0.3125rem)"
+        }
+      },
+      "2xs": {
+        "$value": {
+          "value": 9,
+          "unit": "px"
+        },
+        "$type": "dimension",
+        "$extensions": {
+          "digital.vasic.fluid": "clamp(0.5rem, 0.4783rem + 0.1087vw, 0.5625rem)"
+        }
+      },
+      "xs": {
+        "$value": {
+          "value": 14,
+          "unit": "px"
+        },
+        "$type": "dimension",
+        "$extensions": {
+          "digital.vasic.fluid": "clamp(0.75rem, 0.7065rem + 0.2174vw, 0.875rem)"
+        }
+      },
+      "s": {
+        "$value": {
+          "value": 18,
+          "unit": "px"
+        },
+        "$type": "dimension",
+        "$extensions": {
+          "digital.vasic.fluid": "clamp(1rem, 0.9565rem + 0.2174vw, 1.125rem)"
+        }
+      },
+      "m": {
+        "$value": {
+          "value": 27,
+          "unit": "px"
+        },
+        "$type": "dimension",
+        "$extensions": {
+          "digital.vasic.fluid": "clamp(1.5rem, 1.4348rem + 0.3261vw, 1.6875rem)"
+        }
+      },
+      "l": {
+        "$value": {
+          "value": 36,
+          "unit": "px"
+        },
+        "$type": "dimension",
+        "$extensions": {
+          "digital.vasic.fluid": "clamp(2rem, 1.913rem + 0.4348vw, 2.25rem)"
+        }
+      },
+      "xl": {
+        "$value": {
+          "value": 54,
+          "unit": "px"
+        },
+        "$type": "dimension",
+        "$extensions": {
+          "digital.vasic.fluid": "clamp(3rem, 2.8696rem + 0.6522vw, 3.375rem)"
+        }
+      },
+      "2xl": {
+        "$value": {
+          "value": 72,
+          "unit": "px"
+        },
+        "$type": "dimension",
+        "$extensions": {
+          "digital.vasic.fluid": "clamp(4rem, 3.8261rem + 0.8696vw, 4.5rem)"
+        }
+      }
+    },
+    "radius": {
+      "$type": "dimension",
+      "none": {
+        "$value": {
+          "value": 0,
+          "unit": "px"
+        }
+      },
+      "xs": {
+        "$value": {
+          "value": 4,
+          "unit": "px"
+        }
+      },
+      "sm": {
+        "$value": {
+          "value": 8,
+          "unit": "px"
+        }
+      },
+      "md": {
+        "$value": {
+          "value": 12,
+          "unit": "px"
+        }
+      },
+      "lg": {
+        "$value": {
+          "value": 16,
+          "unit": "px"
+        }
+      },
+      "xl": {
+        "$value": {
+          "value": 28,
+          "unit": "px"
+        }
+      },
+      "full": {
+        "$value": {
+          "value": 9999,
+          "unit": "px"
+        }
+      }
+    },
+    "elevation": {
+      "$type": "dimension",
+      "shadow-blur": {
+        "$value": {
+          "value": 16,
+          "unit": "px"
+        }
+      },
+      "shadow-offset-y": {
+        "$value": {
+          "value": 4,
+          "unit": "px"
+        }
+      }
+    }
+  },
+  "motion": {
+    "$type": "duration",
+    "quick": {
+      "$value": {
+        "value": 85,
+        "unit": "ms"
+      }
+    },
+    "standard": {
+      "$value": {
+        "value": 170,
+        "unit": "ms"
+      }
+    },
+    "emphasized": {
+      "$value": {
+        "value": 340,
+        "unit": "ms"
+      }
+    }
+  },
+  "typography": {
+    "font-family": {
+      "$type": "fontFamily",
+      "display": {
+        "$value": [
+          "Fraunces",
+          "system-ui",
+          "sans-serif"
+        ]
+      },
+      "body": {
+        "$value": [
+          "Inter",
+          "system-ui",
+          "sans-serif"
+        ]
+      },
+      "mono": {
+        "$value": [
+          "JetBrains Mono",
+          "ui-monospace",
+          "monospace"
+        ]
+      }
+    },
+    "type-scale": {
+      "$type": "dimension",
+      "display-large": {
+        "$value": {
+          "value": 100.984,
+          "unit": "px"
+        },
+        "$type": "dimension",
+        "$extensions": {
+          "digital.vasic.fluid": "clamp(2.986rem, 1.8293rem + 5.7835vw, 6.3115rem)"
+        }
+      },
+      "display-medium": {
+        "$value": {
+          "value": 75.757,
+          "unit": "px"
+        },
+        "$type": "dimension",
+        "$extensions": {
+          "digital.vasic.fluid": "clamp(2.4883rem, 1.7069rem + 3.907vw, 4.7348rem)"
+        }
+      },
+      "display-small": {
+        "$value": {
+          "value": 56.832,
+          "unit": "px"
+        },
+        "$type": "dimension",
+        "$extensions": {
+          "digital.vasic.fluid": "clamp(2.0736rem, 1.5594rem + 2.5711vw, 3.552rem)"
+        }
+      },
+      "headline-large": {
+        "$value": {
+          "value": 56.832,
+          "unit": "px"
+        },
+        "$type": "dimension",
+        "$extensions": {
+          "digital.vasic.fluid": "clamp(2.0736rem, 1.5594rem + 2.5711vw, 3.552rem)"
+        }
+      },
+      "headline-medium": {
+        "$value": {
+          "value": 42.635,
+          "unit": "px"
+        },
+        "$type": "dimension",
+        "$extensions": {
+          "digital.vasic.fluid": "clamp(1.728rem, 1.4022rem + 1.629vw, 2.6647rem)"
+        }
+      },
+      "headline-small": {
+        "$value": {
+          "value": 42.635,
+          "unit": "px"
+        },
+        "$type": "dimension",
+        "$extensions": {
+          "digital.vasic.fluid": "clamp(1.728rem, 1.4022rem + 1.629vw, 2.6647rem)"
+        }
+      },
+      "title-large": {
+        "$value": {
+          "value": 31.984,
+          "unit": "px"
+        },
+        "$type": "dimension",
+        "$extensions": {
+          "digital.vasic.fluid": "clamp(1.44rem, 1.2456rem + 0.9722vw, 1.999rem)"
+        }
+      },
+      "title-medium": {
+        "$value": {
+          "value": 23.994,
+          "unit": "px"
+        },
+        "$type": "dimension",
+        "$extensions": {
+          "digital.vasic.fluid": "clamp(1.2rem, 1.0958rem + 0.5211vw, 1.4996rem)"
+        }
+      },
+      "title-small": {
+        "$value": {
+          "value": 18,
+          "unit": "px"
+        },
+        "$type": "dimension",
+        "$extensions": {
+          "digital.vasic.fluid": "clamp(1rem, 0.9565rem + 0.2174vw, 1.125rem)"
+        }
+      },
+      "body-large": {
+        "$value": {
+          "value": 12,
+          "unit": "px"
+        },
+        "$type": "dimension",
+        "$extensions": {
+          "digital.vasic.fluid": "clamp(1rem, 0.9565rem + 0.2174vw, 1.125rem)"
+        }
+      },
+      "body-medium": {
+        "$value": {
+          "value": 18,
+          "unit": "px"
+        },
+        "$type": "dimension",
+        "$extensions": {
+          "digital.vasic.fluid": "clamp(1rem, 0.9565rem + 0.2174vw, 1.125rem)"
+        }
+      },
+      "body-small": {
+        "$value": {
+          "value": 13.503,
+          "unit": "px"
+        },
+        "$type": "dimension",
+        "$extensions": {
+          "digital.vasic.fluid": "clamp(0.8333rem, 0.8296rem + 0.0185vw, 0.844rem)"
+        }
+      },
+      "label-large": {
+        "$value": {
+          "value": 18,
+          "unit": "px"
+        },
+        "$type": "dimension",
+        "$extensions": {
+          "digital.vasic.fluid": "clamp(1rem, 0.9565rem + 0.2174vw, 1.125rem)"
+        }
+      },
+      "label-medium": {
+        "$value": {
+          "value": 13.503,
+          "unit": "px"
+        },
+        "$type": "dimension",
+        "$extensions": {
+          "digital.vasic.fluid": "clamp(0.8333rem, 0.8296rem + 0.0185vw, 0.844rem)"
+        }
+      },
+      "label-small": {
+        "$value": {
+          "value": 13.503,
+          "unit": "px"
+        },
+        "$type": "dimension",
+        "$extensions": {
+          "digital.vasic.fluid": "clamp(0.8333rem, 0.8296rem + 0.0185vw, 0.844rem)"
+        }
+      }
+    }
+  }
+}
