@@ -1,0 +1,55 @@
+/* =============================================================================
+ * GOLDEN-BAD fixture for check-tokens.mjs — INTENTIONALLY DEFECTIVE.
+ * Not a real candidate; it exists only to prove the HelixQA token checks BITE.
+ * A check that only ever passes on good input is worthless (anti-bluff, §11.4.5),
+ * so every gating challenge must FAIL here on a concrete, realistic defect.
+ *
+ * Three planted defects, each caught by a different challenge:
+ *   T2  dropped :root — the light :root block below is swallowed by a comment
+ *       (the exact failure the generator's pc() "*/"-escaper prevents; brace
+ *       balance is BALANCED here and would be fooled — only the CSSOM tells the
+ *       truth). Its declarations never reach getComputedStyle.
+ *   T1  missing token — the only active block omits --od-focus (and most of the
+ *       ~72-token contract), so coverage against the live brand CSS fails.
+ *   T4  failing contrast — the active block ships a text/bg (and on-accent/accent)
+ *       pair well below WCAG 4.5:1.
+ * ========================================================================== */
+
+/* The comment below opened because an unescaped path-glob sequence closed the
+ * header early upstream, so the whole light :root ends up INSIDE comment scope
+ * and is inert. Braces stay balanced; a naive brace-counter passes it; the
+ * browser drops it. (Prose here deliberately avoids the literal close-comment
+ * glyphs so THIS comment ends exactly where intended — after the block.)
+:root {
+  --od-accent-50: #ffeee1;
+  --od-accent-100: #ffdcbf;
+  --od-accent-200: #fdb876;
+  --od-accent-300: #df9e5e;
+  --od-accent-400: #c18446;
+  --od-accent-500: #a36b30;
+  --od-accent-600: #945e25;
+  --od-accent-700: #865219;
+  --od-accent-800: #6a3b01;
+  --od-accent-900: #4a2800;
+  --od-bg: #fff8f5;
+  --od-surface: #fff1e8;
+  --od-text: #211a15;
+  --od-on-accent: #ffffff;
+  --od-focus: rgba(104, 58, 0, 0.6);
+  --od-fs-base: clamp(1rem, 0.9565rem + 0.2174vw, 1.125rem);
+  --od-radius-sm: 8px;
+}
+*/
+
+/* The ONLY active rule. It is valid CSS, but it targets [data-theme="dark"], so
+ * plain :root resolution (no data-theme attribute) still sees nothing — proving
+ * T2 catches the dropped light :root rather than accidentally reading these. */
+:root[data-theme="dark"] {
+  --od-accent-700: #7d7d7d;
+  --od-bg: #6e6e6e;
+  --od-text: #7a7a7a;        /* ~1.06:1 on --od-bg -> FAILS 4.5:1 (T4) */
+  --od-accent: #6e6e6e;
+  --od-on-accent: #7a7a7a;   /* ~1.06:1 on --od-accent -> FAILS 4.5:1 (T4) */
+  --od-surface: #6e6e6e;
+  /* --od-focus and the remaining ~70 --od-* tokens are intentionally OMITTED (T1). */
+}

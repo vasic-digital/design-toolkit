@@ -170,6 +170,11 @@ function emitCss(model, meta) {
   p(" * deterministic gen-tokens.mjs DTCG document. Staged for review; NOT the live");
   p(" * design-system/brand-<name>/<name>.css.");
   pc(` * seed=\"${prov.seed}\" adjectives=[${(prov.adjectives || []).join(", ")}]`);
+  if (prov.anchorHue != null) {
+    pc(` * anchor=${prov.anchorColor || prov.anchorHue} (brand-anchored: seedHue = HCT hue ${prov.anchorHue} of anchor)`);
+  } else {
+    p(" * anchor=(none — free hue derived from seed hash)");
+  }
   p(` * vector: variant=${prov.vector.mcuVariant} hue=${prov.vector.seedHue} harmony=${prov.vector.harmonyRule}`);
   p(` *         typeRatio=${prov.vector.typeRatio} space=${prov.vector.spaceMultiplier} radius=${prov.vector.radiusBase}`);
   p(` *         contrast=${prov.vector.contrastMode} fontPair=${prov.vector.fontPairId} generator v${prov.generatorVersion}`);

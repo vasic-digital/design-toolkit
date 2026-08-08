@@ -4,7 +4,8 @@
  * deterministic gen-tokens.mjs DTCG document. Staged for review; NOT the live
  * design-system/brand-<name>/<name>.css.
  * seed="vasic-digital" adjectives=[industrial, editorial, precise]
- * vector: variant=Fidelity hue=63 harmony=mono
+ * anchor=#8f1d2d (brand-anchored: seedHue = HCT hue 16.55 of anchor)
+ * vector: variant=Fidelity hue=16.554038973708867 harmony=mono
  *         typeRatio=1.5 space=1 radius=8
  *         contrast=premium-dark fontPair=editorial-serif generator v1.0.0
  *
@@ -20,32 +21,32 @@
 
 :root {
   /* Accent ramp — HCT tonal palette of the DTCG primary. */
-  --od-accent-50: #ffeee1;
-  --od-accent-100: #ffdcbf;
-  --od-accent-200: #fdb876;
-  --od-accent-300: #df9e5e;
-  --od-accent-400: #c18446;
-  --od-accent-500: #a36b30;
-  --od-accent-600: #945e25;
-  --od-accent-700: #865219;
-  --od-accent-800: #6a3b01;
-  --od-accent-900: #4a2800;
+  --od-accent-50: #ffedec;
+  --od-accent-100: #ffdada;
+  --od-accent-200: #ffb3b4;
+  --od-accent-300: #ef9194;
+  --od-accent-400: #d0777b;
+  --od-accent-500: #b25f62;
+  --od-accent-600: #a35257;
+  --od-accent-700: #94474b;
+  --od-accent-800: #763035;
+  --od-accent-900: #5a1a20;
 
   /* Surfaces & text (M3 light roles). */
-  --od-bg: #fff8f5;
+  --od-bg: #fff8f7;
   --od-logo-plate: #ffffff; /* synthesized: constant white plate (both themes) */
-  --od-surface: #fff1e8;
-  --od-surface-2: #f5e8df;
-  --od-text: #211a15;
-  --od-text-muted: #504337;
-  --od-border: #978678;
+  --od-surface: #fff0f0;
+  --od-surface-2: #f6e7e6;
+  --od-text: #211a1a;
+  --od-text-muted: #524141;
+  --od-border: #998484;
 
   /* Accent semantics. */
   --od-accent: var(--od-accent-700);
   --od-accent-hover: var(--od-accent-800);
   --od-accent-active: var(--od-accent-900);
   --od-on-accent: #ffffff;
-  --od-focus: rgba(104, 58, 0, 0.6);
+  --od-focus: rgba(116, 46, 51, 0.6);
 
   /* Status (danger<-M3 error; success/warning synthesized). */
   --od-success: #2e7d32;
@@ -120,17 +121,17 @@
 }
 
 :root[data-theme="dark"] {
-  --od-bg: #18120d;
-  --od-surface: #221c16;
-  --od-surface-2: #2a231e;
-  --od-text: #ede0d7;
-  --od-text-muted: #d7c3b3;
-  --od-border: #817164;
+  --od-bg: #191212;
+  --od-surface: #231b1b;
+  --od-surface-2: #2b2323;
+  --od-text: #eedfde;
+  --od-text-muted: #d9c1c1;
+  --od-border: #84706f;
   --od-accent: var(--od-accent-300);
   --od-accent-hover: var(--od-accent-200);
   --od-accent-active: var(--od-accent-100);
-  --od-on-accent: #341b00;
-  --od-focus: rgba(255, 184, 114, 0.6);
+  --od-on-accent: #450a11;
+  --od-focus: rgba(255, 179, 180, 0.6);
   --od-success: #2b8a3e;
   --od-warning: #f59e0b;
   --od-danger: #ffb4ab;
@@ -140,17 +141,17 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --od-bg: #18120d;
-    --od-surface: #221c16;
-    --od-surface-2: #2a231e;
-    --od-text: #ede0d7;
-    --od-text-muted: #d7c3b3;
-    --od-border: #817164;
+    --od-bg: #191212;
+    --od-surface: #231b1b;
+    --od-surface-2: #2b2323;
+    --od-text: #eedfde;
+    --od-text-muted: #d9c1c1;
+    --od-border: #84706f;
     --od-accent: var(--od-accent-300);
     --od-accent-hover: var(--od-accent-200);
     --od-accent-active: var(--od-accent-100);
-    --od-on-accent: #341b00;
-    --od-focus: rgba(255, 184, 114, 0.6);
+    --od-on-accent: #450a11;
+    --od-focus: rgba(255, 179, 180, 0.6);
     --od-success: #2b8a3e;
     --od-warning: #f59e0b;
     --od-danger: #ffb4ab;

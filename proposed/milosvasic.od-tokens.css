@@ -4,7 +4,8 @@
  * deterministic gen-tokens.mjs DTCG document. Staged for review; NOT the live
  * design-system/brand-<name>/<name>.css.
  * seed="milosvasic" adjectives=[terminal, brutalist, mono]
- * vector: variant=Expressive hue=46 harmony=mono
+ * anchor=#a31e39 (brand-anchored: seedHue = HCT hue 13.9 of anchor)
+ * vector: variant=Expressive hue=13.897004612088466 harmony=mono
  *         typeRatio=1.5 space=1.25 radius=4
  *         contrast=standard fontPair=humanist-warm generator v1.0.0
  *
@@ -20,32 +21,32 @@
 
 :root {
   /* Accent ramp — HCT tonal palette of the DTCG primary. */
-  --od-accent-50: #f2efff;
-  --od-accent-100: #e2dfff;
-  --od-accent-200: #c2c1ff;
-  --od-accent-300: #a6a4ec;
-  --od-accent-400: #8b8ad0;
-  --od-accent-500: #7170b4;
-  --od-accent-600: #6564a7;
-  --od-accent-700: #585799;
-  --od-accent-800: #403f80;
-  --od-accent-900: #2a2868;
+  --od-accent-50: #ffeced;
+  --od-accent-100: #ffdadb;
+  --od-accent-200: #ffb2b8;
+  --od-accent-300: #ee9199;
+  --od-accent-400: #cf787f;
+  --od-accent-500: #b15f67;
+  --od-accent-600: #a2535b;
+  --od-accent-700: #93474f;
+  --od-accent-800: #763038;
+  --od-accent-900: #591a23;
 
   /* Surfaces & text (M3 light roles). */
-  --od-bg: #fff8f5;
+  --od-bg: #f5fbef;
   --od-logo-plate: #ffffff; /* synthesized: constant white plate (both themes) */
-  --od-surface: #fff1e8;
-  --od-surface-2: #feeadc;
-  --od-text: #231a11;
-  --od-text-muted: #554334;
-  --od-border: #dcc2ad;
+  --od-surface: #eff6ea;
+  --od-surface-2: #e9f0e4;
+  --od-text: #171d16;
+  --od-text-muted: #3e4a3d;
+  --od-border: #bdcab9;
 
   /* Accent semantics. */
   --od-accent: var(--od-accent-700);
   --od-accent-hover: var(--od-accent-800);
   --od-accent-active: var(--od-accent-900);
   --od-on-accent: #ffffff;
-  --od-focus: rgba(88, 87, 153, 0.6);
+  --od-focus: rgba(147, 71, 79, 0.6);
 
   /* Status (danger<-M3 error; success/warning synthesized). */
   --od-success: #2e7d32;
@@ -120,17 +121,17 @@
 }
 
 :root[data-theme="dark"] {
-  --od-bg: #1b120a;
-  --od-surface: #231a11;
-  --od-surface-2: #281e15;
-  --od-text: #f2dfd1;
-  --od-text-muted: #dcc2ad;
-  --od-border: #554334;
+  --od-bg: #0f150e;
+  --od-surface: #171d16;
+  --od-surface-2: #1b211a;
+  --od-text: #dee5d9;
+  --od-text-muted: #bdcab9;
+  --od-border: #3e4a3d;
   --od-accent: var(--od-accent-300);
   --od-accent-hover: var(--od-accent-200);
   --od-accent-active: var(--od-accent-100);
-  --od-on-accent: #292867;
-  --od-focus: rgba(194, 193, 255, 0.6);
+  --od-on-accent: #591a24;
+  --od-focus: rgba(255, 178, 184, 0.6);
   --od-success: #2b8a3e;
   --od-warning: #f59e0b;
   --od-danger: #ffb4ab;
@@ -140,17 +141,17 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --od-bg: #1b120a;
-    --od-surface: #231a11;
-    --od-surface-2: #281e15;
-    --od-text: #f2dfd1;
-    --od-text-muted: #dcc2ad;
-    --od-border: #554334;
+    --od-bg: #0f150e;
+    --od-surface: #171d16;
+    --od-surface-2: #1b211a;
+    --od-text: #dee5d9;
+    --od-text-muted: #bdcab9;
+    --od-border: #3e4a3d;
     --od-accent: var(--od-accent-300);
     --od-accent-hover: var(--od-accent-200);
     --od-accent-active: var(--od-accent-100);
-    --od-on-accent: #292867;
-    --od-focus: rgba(194, 193, 255, 0.6);
+    --od-on-accent: #591a24;
+    --od-focus: rgba(255, 178, 184, 0.6);
     --od-success: #2b8a3e;
     --od-warning: #f59e0b;
     --od-danger: #ffb4ab;

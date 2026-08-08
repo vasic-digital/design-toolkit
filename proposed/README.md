@@ -13,8 +13,8 @@ Each file is the output of a deterministic two-stage pipeline in
 `design-toolkit/generators/`:
 
 ```
-gen-tokens.mjs  --seed <s> --adjectives <dir>   # → DTCG design-token JSON
-   │  (parametric-uniqueness engine: seed+adjectives+version → tokens)
+gen-tokens.mjs  --seed <s> --adjectives <dir> [--anchor-color <hex>]  # → DTCG JSON
+   │  (parametric-uniqueness engine: seed+adjectives+anchor+version → tokens)
    ▼
 dtcg-to-od.mjs  --stdin --out <candidate>.css   # → the sites' --od-* contract
 ```
@@ -22,26 +22,57 @@ dtcg-to-od.mjs  --stdin --out <candidate>.css   # → the sites' --od-* contract
 `dtcg-to-od.mjs` is a **pure function of the DTCG JSON** (no Date, no random, no
 network), so `same input → byte-identical CSS`.
 
-### Direction seeds (OpenDesign-derived adjectives)
+## Free-hue vs brand-anchored mode
 
-| Candidate | seed | adjectives (direction) |
-|---|---|---|
-| `vasic-digital.od-tokens.css` | `vasic-digital` | `industrial, editorial, precise` (MACHINA) |
-| `milosvasic.od-tokens.css` | `milosvasic` | `terminal, brutalist, mono` |
+The generator supports **two hue modes**. Everything else (adjectives → MCU
+variant, type ratio, space, radius, contrast, fonts, motion, depth) is identical
+in both — only the accent/identity hue differs:
 
-> Note: the generator derives its base hue from the **seed hash**, not from the
-> current brand-locked crimson. These candidates therefore explore a *new*
-> direction (e.g. vasic-digital lands on a gold/amber accent). That is by design
-> — they are direction proposals, not a re-skin of today's palette.
+- **Free-hue (default):** the base hue is derived from the **seed hash**. This
+  explores a *new* color direction unrelated to today's palette (e.g.
+  `vasic-digital` lands on gold `#865219`, `milosvasic` on indigo `#585799`).
+  Use for greenfield direction exploration.
+
+- **Brand-anchored (`--anchor-color <hex>`):** the palette is rebuilt **around
+  an existing brand hue** so the deterministic tokens *refine* the current brand
+  rather than replacing its color identity. Pass the site's current
+  `--od-accent-700`. The candidates checked in here are anchored, so their accent
+  ramps stay in the **crimson family** matching the live sites.
+
+### How anchoring actually works (and why it is not just `seedHue = anchorHue`)
+
+The flag sets the **target accent hue**, then solves for the MCU **source** hue
+so the resulting M3 *primary* (== `--od-accent-700`, tone 40) lands on that
+target. This matters because some MCU variants (Expressive, Vibrant, Rainbow,
+FruitSalad) deliberately **rotate** the primary palette away from the source
+hue. Naïvely feeding the anchor as the source rotates the accent off-brand — e.g.
+`milosvasic`'s hash-selected **Expressive** variant would turn crimson into
+**blue** (`#2d6195`). The solver inverts that rotation, so the accent returns to
+crimson (`#93474f`) while the variant's tonal personality is preserved. The
+anchor and the achieved source/primary hues are recorded in the DTCG provenance
+vector (`anchorColor`, `anchorHue`, `sourceHue`, `seedHue`) and echoed into each
+generated file's header comment.
+
+### Direction seeds + anchors
+
+| Candidate | seed | adjectives (direction) | anchor (live `--od-accent-700`) | accent-700 (anchored) |
+|---|---|---|---|---|
+| `vasic-digital.od-tokens.css` | `vasic-digital` | `industrial, editorial, precise` (MACHINA) | `#8f1d2d` | `#94474b` |
+| `milosvasic.od-tokens.css` | `milosvasic` | `terminal, brutalist, mono` | `#a31e39` | `#93474f` |
 
 ## Regenerate + verify
 
 ```sh
 cd design-toolkit/generators
-node gen-tokens.mjs --seed vasic-digital --adjectives "industrial,editorial,precise" --stdout \
+# Brand-anchored (what is checked in — accent stays in the live crimson family):
+node gen-tokens.mjs --seed vasic-digital --adjectives "industrial,editorial,precise" \
+  --anchor-color "#8f1d2d" --stdout \
   | node dtcg-to-od.mjs --stdin --out ../proposed/vasic-digital.od-tokens.css
-node gen-tokens.mjs --seed milosvasic --adjectives "terminal,brutalist,mono" --stdout \
+node gen-tokens.mjs --seed milosvasic --adjectives "terminal,brutalist,mono" \
+  --anchor-color "#a31e39" --stdout \
   | node dtcg-to-od.mjs --stdin --out ../proposed/milosvasic.od-tokens.css
+
+# Free-hue (drop --anchor-color) explores a new direction instead.
 ```
 
 ## Coverage / mapping / synthesized tokens

@@ -11,6 +11,7 @@ import {
   Hct,
   MaterialDynamicColors,
   hexFromArgb,
+  argbFromHex,
   SchemeTonalSpot,
   SchemeVibrant,
   SchemeExpressive,
@@ -142,17 +143,85 @@ function radiusScale(radiusBase) {
 }
 
 /**
+ * Resolve an optional brand-anchor into an HCT hue (degrees, 0..360).
+ * Accepts a hex color ("#8f1d2d" / "8f1d2d" / "#abc") whose HCT hue is measured,
+ * or a bare number of degrees. Returns null when no anchor is given.
+ * Pure + deterministic (HCT.hue is a fixed function of the pinned MCU version).
+ * @param {string|number|null|undefined} anchor
+ * @returns {number|null}
+ */
+export function resolveAnchorHue(anchor) {
+  if (anchor == null || anchor === "") return null;
+  const s = String(anchor).trim();
+  const hex3 = /^#?([0-9a-fA-F]{3})$/.exec(s);
+  const hex6 = /^#?([0-9a-fA-F]{6})$/.exec(s);
+  if (hex6 || hex3) {
+    const raw = hex6 ? hex6[1] : hex3[1].split("").map((c) => c + c).join("");
+    return Hct.fromInt(argbFromHex("#" + raw.toLowerCase())).hue;
+  }
+  const n = Number(s);
+  if (Number.isFinite(n)) return ((n % 360) + 360) % 360;
+  throw new Error(`invalid --anchor-color/--anchor-hue "${anchor}": expected a hex color or degrees`);
+}
+
+// Smallest circular distance between two hues in degrees (0..180).
+function hueDelta(a, b) {
+  const d = Math.abs(((a - b) % 360 + 360) % 360);
+  return d > 180 ? 360 - d : d;
+}
+
+// Measure the M3 primary hue a variant produces for a given SOURCE hue.
+function primaryHueFor(SchemeClass, level, sourceHue) {
+  const scheme = new SchemeClass(Hct.from(sourceHue, 40, 40), false, level);
+  const argb = MaterialDynamicColors.primary.getArgb(scheme);
+  return Hct.fromInt(argb).hue;
+}
+
+/**
+ * Find the SOURCE hue whose resulting M3 primary hue is closest to `targetHue`,
+ * for a given variant + contrast level. Deterministic (fixed grid + refine), and
+ * exact to well under 1° — far tighter than the ~15° family tolerance. For
+ * hue-preserving variants this returns ~targetHue; for hue-rotating variants it
+ * returns the pre-image that lands the accent back on the brand hue.
+ */
+export function solveSourceHueForPrimary(SchemeClass, level, targetHue) {
+  let best = 0, bestErr = Infinity;
+  for (let h = 0; h < 360; h++) {
+    const err = hueDelta(primaryHueFor(SchemeClass, level, h), targetHue);
+    if (err < bestErr) { bestErr = err; best = h; }
+  }
+  // Refine ±1° at 0.05° steps around the coarse minimum.
+  let refined = best;
+  for (let h = best - 1; h <= best + 1 + 1e-9; h += 0.05) {
+    const hh = ((h % 360) + 360) % 360;
+    const err = hueDelta(primaryHueFor(SchemeClass, level, hh), targetHue);
+    if (err < bestErr) { bestErr = err; refined = hh; }
+  }
+  return refined;
+}
+
+/**
  * Resolve a seed (and optional brand adjectives) to the full design-DNA vector.
  * Deterministic: identical inputs -> identical vector.
  * @param {string|number} seed
- * @param {{ adjectives?: string[] }} [opts]
+ * @param {{ adjectives?: string[], anchor?: string|number }} [opts]
+ *   `anchor` (hex color or degrees), when set, REFINES rather than replaces the
+ *   brand: its HCT hue overrides the hash-derived seedHue so the whole palette
+ *   is rebuilt AROUND the existing brand hue. All other axes stay seed-driven.
  */
 export function deriveVector(seed, opts = {}) {
   const rng = new SeededRandom(seed);
   const adjectives = (opts.adjectives || []).map((a) => a.toLowerCase());
 
-  // Base hue from the first hash word for a stable, well-spread identity color.
-  let seedHue = rng.words[0] % 360;
+  // Base hue from the first hash word for a stable, well-spread identity color...
+  const hashHue = rng.words[0] % 360;
+  // ...unless a brand anchor is supplied, in which case its measured HCT hue
+  // becomes the palette's IDENTITY hue so the deterministic palette REFINES the
+  // current brand color identity instead of replacing it. Still deterministic:
+  // same seed+anchor+version => byte-identical output.
+  const anchorHue = resolveAnchorHue(opts.anchor);
+  // seedHue = the identity hue we want the ACCENT (M3 primary) to land on.
+  let seedHue = anchorHue == null ? hashHue : anchorHue;
   let mcuVariant = VARIANT_NAMES[rng.words[1] % VARIANT_NAMES.length];
   let harmonyRule = rng.pick(HARMONY_RULES);
   let typeRatio = rng.pick(TYPE_RATIOS);
@@ -181,10 +250,28 @@ export function deriveVector(seed, opts = {}) {
   const matched = FONT_PAIRS.find((p) => p.adjectives.some((a) => adjectives.includes(a)));
   if (matched) fontPair = matched;
 
+  // sourceHue = the hue fed to the MCU scheme's SOURCE color. For most variants
+  // the primary preserves source hue, so sourceHue == seedHue. But some variants
+  // (Expressive/Vibrant/Rainbow/FruitSalad) deliberately ROTATE the primary
+  // palette away from the source hue. Feeding the anchor hue as the source there
+  // would rotate the ACCENT off-brand (e.g. crimson -> blue). So when anchoring,
+  // we invert that rotation: pick the source hue whose resulting M3 primary lands
+  // on the anchor hue. Free-hue path is unchanged (sourceHue == hash seedHue),
+  // preserving byte-identical output for every non-anchored seed.
+  const level = CONTRAST_LEVEL[contrastMode] ?? 0.0;
+  const sourceHue =
+    anchorHue == null ? seedHue : solveSourceHueForPrimary(MCU_VARIANTS[mcuVariant], level, seedHue);
+
   return {
     seed: String(seed),
     adjectives,
     seedHue,
+    // Compensated source hue actually fed to the MCU scheme (see above).
+    sourceHue,
+    // Anchor provenance (null when free-hue). anchorColor is the raw input if it
+    // was a hex; anchorHue is the resolved HCT hue = the target accent hue.
+    anchorColor: anchorHue == null ? null : (typeof opts.anchor === "string" && /^#?[0-9a-fA-F]{3,6}$/.test(opts.anchor.trim()) ? (opts.anchor.trim().startsWith("#") ? opts.anchor.trim() : "#" + opts.anchor.trim()) : null),
+    anchorHue: anchorHue == null ? null : Math.round(anchorHue * 100) / 100,
     mcuVariant,
     harmonyRule,
     typeRatio,
@@ -222,7 +309,8 @@ export function buildSchemes(vector) {
   const SchemeClass = MCU_VARIANTS[vector.mcuVariant];
   const level = CONTRAST_LEVEL[vector.contrastMode] ?? 0.0;
   // Moderate source chroma/tone; the variant recomputes the tonal palettes.
-  const source = Hct.from(vector.seedHue, 40, 40);
+  // Use sourceHue (== seedHue for free-hue; anchor-compensated when anchoring).
+  const source = Hct.from(vector.sourceHue ?? vector.seedHue, 40, 40);
   return {
     light: schemeToHexMap(new SchemeClass(source, false, level)),
     dark: schemeToHexMap(new SchemeClass(source, true, level)),
@@ -331,7 +419,9 @@ export function generateTokens(seed, opts = {}) {
   const document = {
     $description:
       `Generated by @vasic-digital/design-toolkit-generators v${GENERATOR_VERSION} ` +
-      `from seed="${vector.seed}" variant=${vector.mcuVariant} hue=${vector.seedHue} ` +
+      `from seed="${vector.seed}" ` +
+      (vector.anchorHue == null ? "" : `anchor=${vector.anchorColor || vector.anchorHue}(hue ${vector.anchorHue}) `) +
+      `variant=${vector.mcuVariant} hue=${vector.seedHue} ` +
       `harmony=${vector.harmonyRule} typeRatio=${vector.typeRatio} ` +
       `space=${vector.spaceMultiplier} radius=${vector.radiusBase} ` +
       `contrast=${vector.contrastMode} fontPair=${vector.fontPairId} ` +
@@ -343,8 +433,12 @@ export function generateTokens(seed, opts = {}) {
       "digital.vasic.provenance": {
         seed: vector.seed,
         adjectives: vector.adjectives,
+        anchorColor: vector.anchorColor,
+        anchorHue: vector.anchorHue,
         vector: {
           seedHue: vector.seedHue,
+          sourceHue: vector.sourceHue == null ? null : Math.round(vector.sourceHue * 100) / 100,
+          anchorHue: vector.anchorHue,
           mcuVariant: vector.mcuVariant,
           harmonyRule: vector.harmonyRule,
           typeRatio: vector.typeRatio,
