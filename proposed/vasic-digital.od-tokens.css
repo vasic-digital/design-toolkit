@@ -1,0 +1,160 @@
+/* =============================================================================
+ * OpenDesign direction-generator candidate — GENERATED, DO NOT EDIT BY HAND.
+ * Produced by design-toolkit/generators/dtcg-to-od.mjs (Helix §11.4.162) from a
+ * deterministic gen-tokens.mjs DTCG document. Staged for review; NOT the live
+ * design-system/brand-<name>/<name>.css.
+ * seed="vasic-digital" adjectives=[industrial, editorial, precise]
+ * vector: variant=Fidelity hue=63 harmony=mono
+ *         typeRatio=1.5 space=1 radius=8
+ *         contrast=premium-dark fontPair=editorial-serif generator v1.0.0
+ *
+ * M3 role -> --od-* mapping:
+ *   --od-bg<-background  --od-surface<-surface-container-low  --od-surface-2<-surface-container
+ *   --od-text<-on-background  --od-text-muted<-on-surface-variant  --od-border<-outline-variant
+ *   --od-on-accent<-on-primary  --od-focus<-primary@0.6  --od-danger<-error
+ *   --od-accent-{50..900} <- HCT TonalPalette of primary (700==primary tone 40)
+ *   --od-accent/-hover/-active -> ramp 700/800/900 (light), 300/200/100 (dark)
+ * Synthesized constants: --od-logo-plate(#fff), status colors, shadow recipes,
+ *   line-height, tracking, easing, z-index, container-max, named font vars.
+ * ========================================================================== */
+
+:root {
+  /* Accent ramp — HCT tonal palette of the DTCG primary. */
+  --od-accent-50: #ffeee1;
+  --od-accent-100: #ffdcbf;
+  --od-accent-200: #fdb876;
+  --od-accent-300: #df9e5e;
+  --od-accent-400: #c18446;
+  --od-accent-500: #a36b30;
+  --od-accent-600: #945e25;
+  --od-accent-700: #865219;
+  --od-accent-800: #6a3b01;
+  --od-accent-900: #4a2800;
+
+  /* Surfaces & text (M3 light roles). */
+  --od-bg: #fff8f5;
+  --od-logo-plate: #ffffff; /* synthesized: constant white plate (both themes) */
+  --od-surface: #fff1e8;
+  --od-surface-2: #f5e8df;
+  --od-text: #211a15;
+  --od-text-muted: #504337;
+  --od-border: #978678;
+
+  /* Accent semantics. */
+  --od-accent: var(--od-accent-700);
+  --od-accent-hover: var(--od-accent-800);
+  --od-accent-active: var(--od-accent-900);
+  --od-on-accent: #ffffff;
+  --od-focus: rgba(104, 58, 0, 0.6);
+
+  /* Status (danger<-M3 error; success/warning synthesized). */
+  --od-success: #2e7d32;
+  --od-warning: #d97706;
+  --od-danger: #900009;
+  --od-badge-success-bg: #1e7e34; /* synthesized: AA green behind white text */
+  --od-shadow-color: rgba(0, 0, 0, 0.12);
+
+  /* Fonts (display/body/mono from DTCG; named vars kept for compatibility). */
+  --od-font-display: Fraunces, system-ui, sans-serif;
+  --od-font-body: Inter, system-ui, sans-serif;
+  --od-font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --od-font-space-grotesk: "Space Grotesk", sans-serif;
+  --od-font-inter: "Inter", sans-serif;
+  --od-font-jetbrains-mono: "JetBrains Mono", monospace;
+
+  /* Fluid type scale (clamp()) from the DTCG type-scale. */
+  --od-fs-xs: clamp(0.5rem, 0.5749rem - 0.0966vw, 0.5555rem);
+  --od-fs-sm: clamp(0.75rem, 0.8623rem - 0.1449vw, 0.8333rem);
+  --od-fs-base: clamp(1rem, 0.9565rem + 0.2174vw, 1.125rem);
+  --od-fs-lg: clamp(1.2rem, 1.0304rem + 0.8478vw, 1.6875rem);
+  --od-fs-xl: clamp(1.44rem, 1.0604rem + 1.8978vw, 2.5313rem);
+  --od-fs-2xl: clamp(1.728rem, 1.0084rem + 3.598vw, 3.7969rem);
+  --od-fs-3xl: clamp(2.0736rem, 0.8139rem + 6.2986vw, 5.6953rem);
+
+  /* Line-height & tracking (synthesized constants). */
+  --od-lh-tight: 1.2;
+  --od-lh-normal: 1.5;
+  --od-lh-loose: 1.8;
+  --od-tracking-tight: -0.02em;
+  --od-tracking-normal: 0;
+  --od-tracking-wide: 0.08em;
+
+  /* Space scale from the DTCG dimension.space. */
+  --od-space-1: clamp(0.25rem, 0.2283rem + 0.1087vw, 0.3125rem);
+  --od-space-2: clamp(0.5rem, 0.4783rem + 0.1087vw, 0.5625rem);
+  --od-space-3: clamp(0.75rem, 0.7065rem + 0.2174vw, 0.875rem);
+  --od-space-4: clamp(1rem, 0.9565rem + 0.2174vw, 1.125rem);
+  --od-space-5: clamp(1.5rem, 1.4348rem + 0.3261vw, 1.6875rem);
+  --od-space-6: clamp(2rem, 1.913rem + 0.4348vw, 2.25rem);
+  --od-space-7: clamp(3rem, 2.8696rem + 0.6522vw, 3.375rem);
+  --od-space-8: clamp(4rem, 3.8261rem + 0.8696vw, 4.5rem);
+  --od-space-9: clamp(5rem, 4.7826rem + 1.087vw, 5.625rem);
+  --od-space-10: clamp(6rem, 5.7391rem + 1.3044vw, 6.75rem);
+  --od-space-11: clamp(7rem, 6.6957rem + 1.5218vw, 7.875rem);
+  --od-space-12: clamp(8rem, 7.6522rem + 1.7392vw, 9rem);
+
+  /* Radius from the DTCG dimension.radius. */
+  --od-radius-sm: 8px;
+  --od-radius-md: 12px;
+  --od-radius-lg: 16px;
+  --od-radius-xl: 28px;
+  --od-radius-pill: 9999px;
+
+  /* Shadow recipes (synthesized; use --od-shadow-color/--od-border). */
+  --od-shadow-sm: 0 1px 2px 0 var(--od-shadow-color);
+  --od-shadow-md: 0 4px 6px -1px var(--od-shadow-color), 0 2px 4px -1px var(--od-shadow-color);
+  --od-shadow-lg: 0 10px 15px -3px var(--od-shadow-color), 0 4px 6px -2px var(--od-shadow-color);
+
+  /* Motion durations from the DTCG motion group; easing synthesized. */
+  --od-dur-fast: 85ms;
+  --od-dur-base: 170ms;
+  --od-dur-slow: 340ms;
+  --od-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --od-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Z-index & layout (synthesized constants). */
+  --od-z-nav: 1000;
+  --od-z-modal: 1100;
+  --od-z-toast: 1200;
+  --od-container-max: 1200px;
+}
+
+:root[data-theme="dark"] {
+  --od-bg: #18120d;
+  --od-surface: #221c16;
+  --od-surface-2: #2a231e;
+  --od-text: #ede0d7;
+  --od-text-muted: #d7c3b3;
+  --od-border: #817164;
+  --od-accent: var(--od-accent-300);
+  --od-accent-hover: var(--od-accent-200);
+  --od-accent-active: var(--od-accent-100);
+  --od-on-accent: #341b00;
+  --od-focus: rgba(255, 184, 114, 0.6);
+  --od-success: #2b8a3e;
+  --od-warning: #f59e0b;
+  --od-danger: #ffb4ab;
+  --od-badge-success-bg: #2b8a3e;
+  --od-shadow-color: rgba(0, 0, 0, 0.5);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --od-bg: #18120d;
+    --od-surface: #221c16;
+    --od-surface-2: #2a231e;
+    --od-text: #ede0d7;
+    --od-text-muted: #d7c3b3;
+    --od-border: #817164;
+    --od-accent: var(--od-accent-300);
+    --od-accent-hover: var(--od-accent-200);
+    --od-accent-active: var(--od-accent-100);
+    --od-on-accent: #341b00;
+    --od-focus: rgba(255, 184, 114, 0.6);
+    --od-success: #2b8a3e;
+    --od-warning: #f59e0b;
+    --od-danger: #ffb4ab;
+    --od-badge-success-bg: #2b8a3e;
+    --od-shadow-color: rgba(0, 0, 0, 0.5);
+  }
+}
