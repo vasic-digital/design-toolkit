@@ -1,0 +1,133 @@
+/* =============================================================================
+ * OpenDesign — Learning Kit tokens
+ * design-system/learning-kit/kit-tokens.css
+ *
+ * A SMALL layer of ADDITIONAL tokens for the Learning Kit component library,
+ * built ON TOP of the OpenDesign base contract (--od-*). Everything here is
+ * DERIVED from --od-* tokens wherever a base token exists, so the kit inherits
+ * the active brand + theme (light/dark) automatically and never hardcodes brand
+ * colour. The only literals are:
+ *   - structural numbers with no --od-* equivalent (ring geometry, flip depth),
+ *   - graceful fallbacks (see the @supports block) used ONLY when this file is
+ *     loaded WITHOUT the OpenDesign brand stylesheet present.
+ *
+ * Load order:  brand-*/milosvasic.css  →  kit-tokens.css  →  learning-kit.css
+ *
+ * Constitution §11.4.6 (no bluff): these tokens resolve against the real
+ * OpenDesign token names read from brand-milosvasic/milosvasic.css.
+ * ========================================================================== */
+
+:root {
+  /* ---- Radius scale (maps onto the OpenDesign radius ramp) ---------------- */
+  --lk-radius-sm: var(--od-radius-md);      /* 6px  — chips, pills-ish insets  */
+  --lk-radius: var(--od-radius-lg);          /* 8px  — the default card radius  */
+  --lk-radius-lg: var(--od-radius-xl);       /* 14px — hero / flashcard        */
+  --lk-radius-pill: var(--od-radius-pill);   /* 9999px — pills, badges, fabs   */
+
+  /* ---- Elevation ramp (built from --od-shadow-color so it re-tints in dark)
+   * These are richer than the base --od-shadow-* trio: two-part shadows tuned
+   * for the kit's lift-on-hover interactions. Colour is always the theme's
+   * --od-shadow-color, so shadows deepen automatically in dark mode.        */
+  --lk-elev-1:
+    0 1px 2px var(--od-shadow-color),
+    0 1px 1px var(--od-shadow-color);
+  --lk-elev-2:
+    0 4px 10px -2px var(--od-shadow-color),
+    0 2px 4px -2px var(--od-shadow-color);
+  --lk-elev-3:
+    0 14px 28px -6px var(--od-shadow-color),
+    0 6px 12px -6px var(--od-shadow-color);
+
+  /* ---- Gap / spacing scale (aliases onto --od-space-* so the kit shares the
+   * base rhythm; named by t-shirt size for ergonomic component authoring). */
+  --lk-gap-xs: var(--od-space-2);   /* 0.50rem */
+  --lk-gap-sm: var(--od-space-3);   /* 0.75rem */
+  --lk-gap-md: var(--od-space-4);   /* 1.00rem */
+  --lk-gap-lg: var(--od-space-6);   /* 1.50rem */
+  --lk-gap-xl: var(--od-space-8);   /* 2.00rem */
+
+  /* ---- Progress ring geometry (structural; no --od-* equivalent) --------- */
+  --lk-ring-size: 96px;                       /* outer diameter               */
+  --lk-ring-thickness: 10px;                  /* stroke / ring band width     */
+  --lk-ring-track: var(--od-surface-2);       /* unfilled arc                 */
+  --lk-ring-fill: var(--od-accent);           /* filled arc (brand accent)    */
+  --lk-ring-text: var(--od-text);             /* centred percentage label     */
+
+  /* ---- Flashcard flip depth / duration ---------------------------------- */
+  --lk-flip-dur: var(--od-dur-slow);          /* 350ms base flip              */
+  --lk-flip-ease: var(--od-ease-emphasized);
+  --lk-flip-perspective: 1200px;              /* 3D depth (structural)        */
+
+  /* ---- Skeleton shimmer -------------------------------------------------- */
+  --lk-skeleton-base: var(--od-surface-2);
+  /* A translucent sheen mixed from the theme text colour, so it reads in both
+   * light and dark without a hardcoded hex. color-mix falls back gracefully. */
+  --lk-skeleton-sheen: color-mix(in srgb, var(--od-text) 8%, transparent);
+  --lk-skeleton-dur: 1.4s;
+
+  /* ---- Semantic accent tints for quiz / status (derived, theme-safe) ----- */
+  --lk-tint-accent: color-mix(in srgb, var(--od-accent) 12%, var(--od-surface));
+  --lk-tint-success: color-mix(in srgb, var(--od-success) 16%, var(--od-surface));
+  --lk-tint-danger: color-mix(in srgb, var(--od-danger) 16%, var(--od-surface));
+
+  /* ---- Motion knobs local to the kit ------------------------------------ */
+  --lk-lift: -4px;                            /* hover translateY for cards   */
+  --lk-z-fab: 90;
+}
+
+/* -----------------------------------------------------------------------------
+ * Graceful standalone fallback. If the OpenDesign brand stylesheet is NOT
+ * loaded (so var(--od-*) resolve to nothing), define a minimal neutral base so
+ * the kit still renders. When the brand CSS IS present these are shadowed by
+ * the real tokens above. Probe token: --od-radius-lg.
+ * -------------------------------------------------------------------------- */
+@supports not (color: var(--od-radius-lg)) {
+  :root {
+    --od-bg: #faf9f7;
+    --od-surface: #f4f2ef;
+    --od-surface-2: #eeebe7;
+    --od-text: #1c1a17;
+    --od-text-muted: #4a453f;
+    --od-border: #c8c3bc;
+    --od-accent: #93474f;
+    --od-accent-hover: #763038;
+    --od-on-accent: #ffffff;
+    --od-focus: rgba(147, 71, 79, 0.6);
+    --od-success: #2e7d32;
+    --od-warning: #d97706;
+    --od-danger: #ba1a1a;
+    --od-shadow-color: rgba(0, 0, 0, 0.12);
+    --od-font-display: "Space Grotesk", sans-serif;
+    --od-font-body: "Inter", sans-serif;
+    --od-font-mono: "JetBrains Mono", monospace;
+    --od-fs-xs: 0.8125rem;
+    --od-fs-sm: 0.9375rem;
+    --od-fs-base: 1rem;
+    --od-fs-lg: 1.1875rem;
+    --od-fs-xl: 1.375rem;
+    --od-fs-2xl: 1.75rem;
+    --od-fs-3xl: 2.0625rem;
+    --od-lh-tight: 1.2;
+    --od-lh-normal: 1.5;
+    --od-tracking-tight: -0.025em;
+    --od-tracking-wide: 0.025em;
+    --od-space-1: 0.25rem;
+    --od-space-2: 0.5rem;
+    --od-space-3: 0.75rem;
+    --od-space-4: 1rem;
+    --od-space-5: 1.25rem;
+    --od-space-6: 1.5rem;
+    --od-space-8: 2rem;
+    --od-radius-sm: 4px;
+    --od-radius-md: 6px;
+    --od-radius-lg: 8px;
+    --od-radius-xl: 14px;
+    --od-radius-pill: 9999px;
+    --od-dur-fast: 150ms;
+    --od-dur-base: 250ms;
+    --od-dur-slow: 350ms;
+    --od-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+    --od-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+    --od-z-toast: 1100;
+  }
+}

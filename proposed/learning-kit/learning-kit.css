@@ -1,0 +1,1174 @@
+/* =============================================================================
+ * OpenDesign — Learning Kit
+ * design-system/learning-kit/learning-kit.css   ·   v1.0.0
+ *
+ * A DECOUPLED, reusable component library for learning / education platforms.
+ * Every class is namespaced `lk-`. Every colour, space, radius, type size and
+ * duration is a var(--od-*) base token or a var(--lk-*) kit token derived from
+ * it — so the kit is BRAND-NEUTRAL and THEME-DRIVEN: it works in light AND dark
+ * purely by consuming tokens, and never hardcodes a hex except as a token
+ * fallback. No external dependencies, no build step, no framework.
+ *
+ * Depends on:  the OpenDesign token layer (brand-*/milosvasic.css) + kit-tokens.css
+ * Constitution §11.4.6 — no bluff: all --od-* names resolve against the real
+ * OpenDesign contract.
+ *
+ * Contents
+ *   1.  lk-card            base surface card (+ interactive / accent variants)
+ *   2.  lk-track-card      learning-track card (progress footer, media band)
+ *   3.  lk-module-card     lesson/module row-card (index, status, duration)
+ *   4.  lk-flashcard       3D flip card (front / back)
+ *   5.  lk-quiz-option     answer option: default/selected/correct/incorrect
+ *   6.  lk-progress-ring   SVG ring + CSS conic-gradient variant
+ *   7.  lk-pill / lk-badge status/label tokens
+ *   8.  lk-hero            page/course hero band
+ *   9.  lk-stat            metric tile
+ *   10. lk-chip            filter / tag chip (+ removable)
+ *   11. lk-skeleton        loading shimmer placeholders
+ *   12. lk-nav             horizontal learning nav / tabs
+ *   13. lk-breadcrumb      path breadcrumb
+ *   14. lk-fab             floating action button
+ *   15. lk-toast           toast notification (+ region)
+ *   99. prefers-reduced-motion — neutralises all non-essential motion
+ * ========================================================================== */
+
+/* Local, non-brand structural knobs. Colour still comes only from tokens. */
+.lk-card,
+.lk-track-card,
+.lk-module-card,
+.lk-flashcard,
+.lk-quiz-option,
+.lk-hero,
+.lk-stat,
+.lk-nav,
+.lk-breadcrumb,
+.lk-toast {
+  box-sizing: border-box;
+}
+
+/* =============================================================================
+ * 1. CARD — the base surface primitive the other cards build on.
+ * ========================================================================== */
+.lk-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lk-gap-sm);
+  padding: var(--lk-gap-lg);
+  background-color: var(--od-surface);
+  border: 1px solid var(--od-border);
+  border-radius: var(--lk-radius);
+  box-shadow: var(--lk-elev-1);
+  color: var(--od-text);
+  transition:
+    transform var(--od-dur-base) var(--od-ease-standard),
+    box-shadow var(--od-dur-base) var(--od-ease-standard),
+    border-color var(--od-dur-base) var(--od-ease-standard);
+}
+
+.lk-card__title {
+  font-family: var(--od-font-display);
+  font-size: var(--od-fs-lg);
+  font-weight: 700;
+  line-height: var(--od-lh-tight);
+  letter-spacing: var(--od-tracking-tight);
+  color: var(--od-text);
+  margin: 0;
+}
+
+.lk-card__body {
+  font-size: var(--od-fs-sm);
+  line-height: var(--od-lh-normal);
+  color: var(--od-text-muted);
+  margin: 0;
+}
+
+/* Interactive card: lifts and deepens its shadow on hover / keyboard focus. */
+.lk-card--interactive {
+  cursor: pointer;
+}
+
+.lk-card--interactive:hover,
+.lk-card--interactive:focus-within {
+  transform: translateY(var(--lk-lift));
+  box-shadow: var(--lk-elev-3);
+  border-color: var(--od-accent);
+}
+
+.lk-card--interactive:focus-visible {
+  outline: 2px solid var(--od-focus);
+  outline-offset: 2px;
+}
+
+/* Accent card: a leading accent rail. */
+.lk-card--accent {
+  border-inline-start: 4px solid var(--od-accent);
+}
+
+/* =============================================================================
+ * 2. TRACK CARD — a learning-track / course card with a media band and a
+ *    progress footer. Composes lk-card semantics with a richer layout.
+ * ========================================================================== */
+.lk-track-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: var(--od-surface);
+  border: 1px solid var(--od-border);
+  border-radius: var(--lk-radius);
+  box-shadow: var(--lk-elev-1);
+  transition:
+    transform var(--od-dur-base) var(--od-ease-standard),
+    box-shadow var(--od-dur-base) var(--od-ease-standard),
+    border-color var(--od-dur-base) var(--od-ease-standard);
+}
+
+.lk-track-card:hover,
+.lk-track-card:focus-within {
+  transform: translateY(var(--lk-lift));
+  box-shadow: var(--lk-elev-3);
+  border-color: var(--od-accent);
+}
+
+.lk-track-card:focus-visible {
+  outline: 2px solid var(--od-focus);
+  outline-offset: 2px;
+}
+
+/* Media band — a token-tinted gradient placeholder; drop an <img> inside it. */
+.lk-track-card__media {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background:
+    linear-gradient(135deg,
+      color-mix(in srgb, var(--od-accent) 22%, var(--od-surface-2)),
+      var(--od-surface-2));
+  display: flex;
+  align-items: flex-end;
+  padding: var(--lk-gap-sm);
+}
+
+.lk-track-card__media > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lk-track-card__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lk-gap-xs);
+  padding: var(--lk-gap-lg);
+}
+
+.lk-track-card__eyebrow {
+  font-family: var(--od-font-mono);
+  font-size: var(--od-fs-xs);
+  font-weight: 500;
+  letter-spacing: var(--od-tracking-wide);
+  text-transform: uppercase;
+  color: var(--od-text-muted);
+}
+
+.lk-track-card__title {
+  font-family: var(--od-font-display);
+  font-size: var(--od-fs-xl);
+  font-weight: 700;
+  line-height: var(--od-lh-tight);
+  letter-spacing: var(--od-tracking-tight);
+  color: var(--od-text);
+  margin: 0;
+}
+
+.lk-track-card__desc {
+  font-size: var(--od-fs-sm);
+  line-height: var(--od-lh-normal);
+  color: var(--od-text-muted);
+  margin: 0;
+}
+
+.lk-track-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lk-gap-sm);
+  padding: var(--lk-gap-md) var(--lk-gap-lg);
+  border-top: 1px solid var(--od-border);
+  margin-top: auto;
+}
+
+/* Linear progress bar used in the track footer. Width driven by --lk-progress
+ * (a 0–100 percentage set inline, e.g. style="--lk-progress:64%"). */
+.lk-track-card__progress {
+  flex: 1;
+  height: 8px;
+  border-radius: var(--lk-radius-pill);
+  background-color: var(--od-surface-2);
+  overflow: hidden;
+}
+
+.lk-track-card__progress::before {
+  content: "";
+  display: block;
+  height: 100%;
+  width: var(--lk-progress, 0%);
+  border-radius: inherit;
+  background-color: var(--od-accent);
+  transition: width var(--od-dur-slow) var(--od-ease-emphasized);
+}
+
+.lk-track-card__progress-label {
+  flex: none;
+  font-family: var(--od-font-mono);
+  font-size: var(--od-fs-xs);
+  font-weight: 600;
+  color: var(--od-text-muted);
+}
+
+/* =============================================================================
+ * 3. MODULE CARD — a compact lesson/module row: leading index, title + meta,
+ *    trailing state. Great for a syllabus list.
+ * ========================================================================== */
+.lk-module-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--lk-gap-md);
+  padding: var(--lk-gap-md) var(--lk-gap-lg);
+  background-color: var(--od-surface);
+  border: 1px solid var(--od-border);
+  border-radius: var(--lk-radius);
+  box-shadow: var(--lk-elev-1);
+  transition:
+    transform var(--od-dur-fast) var(--od-ease-standard),
+    box-shadow var(--od-dur-base) var(--od-ease-standard),
+    border-color var(--od-dur-base) var(--od-ease-standard);
+}
+
+.lk-module-card--interactive {
+  cursor: pointer;
+}
+
+.lk-module-card--interactive:hover,
+.lk-module-card--interactive:focus-within {
+  transform: translateX(2px);
+  box-shadow: var(--lk-elev-2);
+  border-color: var(--od-accent);
+}
+
+.lk-module-card:focus-visible {
+  outline: 2px solid var(--od-focus);
+  outline-offset: 2px;
+}
+
+/* Leading circular index. */
+.lk-module-card__index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--lk-radius-pill);
+  background-color: var(--od-surface-2);
+  color: var(--od-text-muted);
+  font-family: var(--od-font-mono);
+  font-size: var(--od-fs-sm);
+  font-weight: 600;
+}
+
+.lk-module-card__main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.lk-module-card__title {
+  font-family: var(--od-font-display);
+  font-size: var(--od-fs-base);
+  font-weight: 700;
+  line-height: var(--od-lh-tight);
+  color: var(--od-text);
+  margin: 0;
+}
+
+.lk-module-card__meta {
+  font-size: var(--od-fs-xs);
+  color: var(--od-text-muted);
+}
+
+/* Completed state — accent index, subtle accent wash. */
+.lk-module-card--done .lk-module-card__index {
+  background-color: var(--od-accent);
+  color: var(--od-on-accent);
+}
+
+.lk-module-card--done {
+  border-color: color-mix(in srgb, var(--od-accent) 40%, var(--od-border));
+}
+
+/* Locked / disabled state. */
+.lk-module-card--locked {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* =============================================================================
+ * 4. FLASHCARD — a 3D flip card. Toggle the flip by adding `.is-flipped` to
+ *    `.lk-flashcard`, or via the `:focus-within` fallback (keyboard-openable)
+ *    when it wraps a focusable control. Front & back are absolutely stacked.
+ *
+ *    Markup:
+ *      <div class="lk-flashcard" tabindex="0">
+ *        <div class="lk-flashcard__inner">
+ *          <div class="lk-flashcard__face lk-flashcard__face--front">…</div>
+ *          <div class="lk-flashcard__face lk-flashcard__face--back">…</div>
+ *        </div>
+ *      </div>
+ * ========================================================================== */
+.lk-flashcard {
+  perspective: var(--lk-flip-perspective);
+  border-radius: var(--lk-radius-lg);
+  cursor: pointer;
+  /* Height is intrinsic to the taller face because both faces share the grid
+   * cell (see __inner). A sensible default keeps single-line cards tidy. */
+  min-height: 180px;
+}
+
+.lk-flashcard:focus-visible {
+  outline: 2px solid var(--od-focus);
+  outline-offset: 3px;
+}
+
+.lk-flashcard__inner {
+  position: relative;
+  display: grid;
+  height: 100%;
+  min-height: inherit;
+  transform-style: preserve-3d;
+  transition: transform var(--lk-flip-dur) var(--lk-flip-ease);
+}
+
+/* Flip trigger: explicit state class, or focus-within as a no-JS fallback. */
+.lk-flashcard.is-flipped .lk-flashcard__inner,
+.lk-flashcard:focus-within .lk-flashcard__inner {
+  transform: rotateY(180deg);
+}
+
+.lk-flashcard__face {
+  /* Both faces occupy the SAME grid cell so the card sizes to the tallest. */
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lk-gap-sm);
+  padding: var(--lk-gap-lg);
+  border: 1px solid var(--od-border);
+  border-radius: var(--lk-radius-lg);
+  box-shadow: var(--lk-elev-2);
+  text-align: center;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.lk-flashcard__face--front {
+  background-color: var(--od-surface);
+  color: var(--od-text);
+}
+
+.lk-flashcard__face--back {
+  background:
+    linear-gradient(135deg,
+      var(--od-accent),
+      color-mix(in srgb, var(--od-accent) 70%, #000));
+  color: var(--od-on-accent);
+  transform: rotateY(180deg);
+}
+
+.lk-flashcard__kicker {
+  font-family: var(--od-font-mono);
+  font-size: var(--od-fs-xs);
+  letter-spacing: var(--od-tracking-wide);
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.lk-flashcard__term {
+  font-family: var(--od-font-display);
+  font-size: var(--od-fs-2xl);
+  font-weight: 700;
+  line-height: var(--od-lh-tight);
+  margin: 0;
+}
+
+.lk-flashcard__definition {
+  font-size: var(--od-fs-base);
+  line-height: var(--od-lh-normal);
+  margin: 0;
+}
+
+/* =============================================================================
+ * 5. QUIZ OPTION — a selectable answer. Base is an accessible button/label.
+ *    States (add the modifier class, or wire aria-* as noted):
+ *      default   ·  base
+ *      selected  ·  .lk-quiz-option--selected  (or [aria-checked="true"])
+ *      correct   ·  .lk-quiz-option--correct
+ *      incorrect ·  .lk-quiz-option--incorrect
+ * ========================================================================== */
+.lk-quiz-option {
+  display: flex;
+  align-items: center;
+  gap: var(--lk-gap-md);
+  width: 100%;
+  padding: var(--lk-gap-md) var(--lk-gap-lg);
+  background-color: var(--od-surface);
+  border: 2px solid var(--od-border);
+  border-radius: var(--lk-radius);
+  font-family: var(--od-font-body);
+  font-size: var(--od-fs-base);
+  line-height: var(--od-lh-normal);
+  color: var(--od-text);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--od-dur-fast) var(--od-ease-standard),
+    border-color var(--od-dur-fast) var(--od-ease-standard),
+    transform var(--od-dur-fast) var(--od-ease-standard);
+}
+
+.lk-quiz-option:hover {
+  border-color: var(--od-accent);
+  background-color: var(--lk-tint-accent);
+}
+
+.lk-quiz-option:focus-visible {
+  outline: 2px solid var(--od-focus);
+  outline-offset: 2px;
+}
+
+.lk-quiz-option:active {
+  transform: scale(0.99);
+}
+
+.lk-quiz-option:disabled,
+.lk-quiz-option[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Leading marker (A/B/C… or a checkbox glyph). */
+.lk-quiz-option__marker {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--lk-radius-pill);
+  border: 2px solid currentColor;
+  font-family: var(--od-font-mono);
+  font-size: var(--od-fs-sm);
+  font-weight: 700;
+  color: var(--od-text-muted);
+}
+
+.lk-quiz-option__text {
+  flex: 1;
+}
+
+/* SELECTED */
+.lk-quiz-option--selected,
+.lk-quiz-option[aria-checked="true"] {
+  border-color: var(--od-accent);
+  background-color: var(--lk-tint-accent);
+}
+
+.lk-quiz-option--selected .lk-quiz-option__marker,
+.lk-quiz-option[aria-checked="true"] .lk-quiz-option__marker {
+  background-color: var(--od-accent);
+  border-color: var(--od-accent);
+  color: var(--od-on-accent);
+}
+
+/* CORRECT */
+.lk-quiz-option--correct {
+  border-color: var(--od-success);
+  background-color: var(--lk-tint-success);
+}
+
+.lk-quiz-option--correct .lk-quiz-option__marker {
+  background-color: var(--od-success);
+  border-color: var(--od-success);
+  color: #ffffff; /* fixed light for AA on green in both themes (§11.4.107) */
+}
+
+/* INCORRECT */
+.lk-quiz-option--incorrect {
+  border-color: var(--od-danger);
+  background-color: var(--lk-tint-danger);
+}
+
+.lk-quiz-option--incorrect .lk-quiz-option__marker {
+  background-color: var(--od-danger);
+  border-color: var(--od-danger);
+  color: #ffffff; /* fixed light for AA on red in both themes (§11.4.107) */
+}
+
+/* =============================================================================
+ * 6. PROGRESS RING — two implementations that share one look.
+ *
+ *   (a) SVG-friendly: style the ring's <circle> elements with these classes and
+ *       drive the arc with stroke-dasharray/offset. The kit paints track + fill
+ *       colours and centres a percentage label.
+ *
+ *   (b) CSS conic-gradient variant (.lk-progress-ring--conic): no SVG needed —
+ *       set the progress with the inline custom property --lk-progress
+ *       (0–100, unitless), e.g. style="--lk-progress:72".
+ * ========================================================================== */
+.lk-progress-ring {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: var(--lk-ring-size);
+  height: var(--lk-ring-size);
+}
+
+.lk-progress-ring__label {
+  position: absolute;
+  font-family: var(--od-font-display);
+  font-size: var(--od-fs-lg);
+  font-weight: 700;
+  color: var(--lk-ring-text);
+  line-height: 1;
+}
+
+/* (a) SVG variant ---------------------------------------------------------- */
+.lk-progress-ring__svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg); /* start the arc at 12 o'clock */
+}
+
+.lk-progress-ring__track {
+  fill: none;
+  stroke: var(--lk-ring-track);
+  stroke-width: var(--lk-ring-thickness);
+}
+
+.lk-progress-ring__value {
+  fill: none;
+  stroke: var(--lk-ring-fill);
+  stroke-width: var(--lk-ring-thickness);
+  stroke-linecap: round;
+  transition: stroke-dashoffset var(--od-dur-slow) var(--od-ease-emphasized);
+}
+
+/* (b) Conic-gradient variant ---------------------------------------------- */
+.lk-progress-ring--conic {
+  border-radius: var(--lk-radius-pill);
+  /* The filled sweep is (--lk-progress)% of 360deg; the remainder is track.
+   * The inner mask punches the hole to leave a ring band. */
+  background:
+    conic-gradient(
+      var(--lk-ring-fill) calc(var(--lk-progress, 0) * 1%),
+      var(--lk-ring-track) 0
+    );
+  -webkit-mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - var(--lk-ring-thickness)),
+    #000 calc(100% - var(--lk-ring-thickness))
+  );
+  mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - var(--lk-ring-thickness)),
+    #000 calc(100% - var(--lk-ring-thickness))
+  );
+  transition: background var(--od-dur-slow) var(--od-ease-emphasized);
+}
+
+/* =============================================================================
+ * 7. PILL & BADGE — small status / label tokens.
+ *    lk-pill  : soft rounded label (neutral by default; semantic modifiers).
+ *    lk-badge : tiny count / dot badge.
+ * ========================================================================== */
+.lk-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--od-space-1);
+  padding: var(--od-space-1) var(--od-space-3);
+  border-radius: var(--lk-radius-pill);
+  background-color: var(--od-surface-2);
+  color: var(--od-text-muted);
+  font-size: var(--od-fs-xs);
+  font-weight: 600;
+  line-height: var(--od-lh-normal);
+  white-space: nowrap;
+}
+
+.lk-pill--accent {
+  background-color: var(--lk-tint-accent);
+  color: var(--od-accent);
+}
+
+.lk-pill--success {
+  background-color: var(--od-success);
+  color: #ffffff; /* AA on green in both themes (§11.4.107) */
+}
+
+.lk-pill--warning {
+  background-color: var(--od-warning);
+  color: #1a1a1a; /* AA on amber in both themes (§11.4.107) */
+}
+
+.lk-pill--danger {
+  background-color: var(--od-danger);
+  color: #ffffff; /* AA on red in both themes (§11.4.107) */
+}
+
+/* Leading status dot for a pill. */
+.lk-pill__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--lk-radius-pill);
+  background-color: currentColor;
+}
+
+.lk-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 var(--od-space-1);
+  border-radius: var(--lk-radius-pill);
+  background-color: var(--od-accent);
+  color: var(--od-on-accent);
+  font-family: var(--od-font-mono);
+  font-size: var(--od-fs-xs);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.lk-badge--dot {
+  min-width: 0.6rem;
+  width: 0.6rem;
+  height: 0.6rem;
+  padding: 0;
+}
+
+/* =============================================================================
+ * 8. HERO — a course / page hero band.
+ * ========================================================================== */
+.lk-hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lk-gap-md);
+  padding: var(--lk-gap-xl);
+  border-radius: var(--lk-radius-lg);
+  background:
+    radial-gradient(120% 140% at 100% 0%,
+      color-mix(in srgb, var(--od-accent) 18%, var(--od-surface)) 0%,
+      var(--od-surface) 55%);
+  border: 1px solid var(--od-border);
+}
+
+.lk-hero__eyebrow {
+  font-family: var(--od-font-mono);
+  font-size: var(--od-fs-xs);
+  font-weight: 500;
+  letter-spacing: var(--od-tracking-wide);
+  text-transform: uppercase;
+  color: var(--od-accent);
+}
+
+.lk-hero__title {
+  font-family: var(--od-font-display);
+  font-size: var(--od-fs-3xl);
+  font-weight: 700;
+  line-height: var(--od-lh-tight);
+  letter-spacing: var(--od-tracking-tight);
+  color: var(--od-text);
+  margin: 0;
+}
+
+.lk-hero__lede {
+  font-size: var(--od-fs-lg);
+  line-height: var(--od-lh-normal);
+  color: var(--od-text-muted);
+  max-width: 60ch;
+  margin: 0;
+}
+
+.lk-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lk-gap-sm);
+  margin-top: var(--lk-gap-xs);
+}
+
+/* =============================================================================
+ * 9. STAT — a metric tile.
+ * ========================================================================== */
+.lk-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--od-space-1);
+  padding: var(--lk-gap-lg);
+  background-color: var(--od-surface);
+  border: 1px solid var(--od-border);
+  border-radius: var(--lk-radius);
+  box-shadow: var(--lk-elev-1);
+}
+
+.lk-stat__value {
+  font-family: var(--od-font-display);
+  font-size: var(--od-fs-2xl);
+  font-weight: 700;
+  line-height: var(--od-lh-tight);
+  color: var(--od-accent);
+}
+
+.lk-stat__label {
+  font-size: var(--od-fs-sm);
+  color: var(--od-text-muted);
+}
+
+.lk-stat__trend {
+  font-family: var(--od-font-mono);
+  font-size: var(--od-fs-xs);
+  font-weight: 600;
+}
+
+.lk-stat__trend--up { color: var(--od-success); }
+.lk-stat__trend--down { color: var(--od-danger); }
+
+/* =============================================================================
+ * 10. CHIP — filter / tag chip (optionally removable).
+ * ========================================================================== */
+.lk-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--od-space-2);
+  padding: var(--od-space-1) var(--od-space-3);
+  border: 1px solid var(--od-border);
+  border-radius: var(--lk-radius-pill);
+  background-color: var(--od-surface);
+  color: var(--od-text);
+  font-size: var(--od-fs-sm);
+  font-weight: 500;
+  line-height: var(--od-lh-normal);
+  cursor: pointer;
+  transition:
+    background-color var(--od-dur-fast) var(--od-ease-standard),
+    border-color var(--od-dur-fast) var(--od-ease-standard),
+    color var(--od-dur-fast) var(--od-ease-standard);
+}
+
+.lk-chip:hover {
+  border-color: var(--od-accent);
+}
+
+.lk-chip:focus-visible {
+  outline: 2px solid var(--od-focus);
+  outline-offset: 2px;
+}
+
+/* Selected / active filter chip. */
+.lk-chip--selected,
+.lk-chip[aria-pressed="true"] {
+  background-color: var(--od-accent);
+  border-color: var(--od-accent);
+  color: var(--od-on-accent);
+}
+
+/* Trailing remove affordance. */
+.lk-chip__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 0;
+  border-radius: var(--lk-radius-pill);
+  background: transparent;
+  color: inherit;
+  font-size: var(--od-fs-sm);
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.lk-chip__remove:hover { opacity: 1; }
+
+.lk-chip__remove:focus-visible {
+  outline: 2px solid var(--od-focus);
+  outline-offset: 1px;
+}
+
+/* =============================================================================
+ * 11. SKELETON — loading placeholders with a shimmer sweep.
+ * ========================================================================== */
+.lk-skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--lk-radius-sm);
+  background-color: var(--lk-skeleton-base);
+}
+
+.lk-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--lk-skeleton-sheen) 50%,
+    transparent 100%
+  );
+  animation: lk-shimmer var(--lk-skeleton-dur) infinite;
+}
+
+@keyframes lk-shimmer {
+  100% { transform: translateX(100%); }
+}
+
+/* Convenience shapes. */
+.lk-skeleton--text {
+  height: 0.75em;
+  margin-block: 0.35em;
+}
+
+.lk-skeleton--title {
+  height: 1.25em;
+  width: 60%;
+}
+
+.lk-skeleton--line-sm { width: 40%; }
+.lk-skeleton--line-lg { width: 90%; }
+
+.lk-skeleton--avatar {
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--lk-radius-pill);
+}
+
+.lk-skeleton--thumb {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--lk-radius);
+}
+
+/* =============================================================================
+ * 12. NAV — a horizontal learning nav / tab strip. Active item gets an accent
+ *     underline that scales in.
+ * ========================================================================== */
+.lk-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--lk-gap-xs);
+  padding: var(--od-space-1);
+  border-bottom: 1px solid var(--od-border);
+  overflow-x: auto;
+}
+
+.lk-nav__item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--od-space-2);
+  padding: var(--od-space-3) var(--od-space-4);
+  border: 0;
+  background: transparent;
+  color: var(--od-text-muted);
+  font-family: var(--od-font-body);
+  font-size: var(--od-fs-sm);
+  font-weight: 600;
+  line-height: var(--od-lh-normal);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--od-dur-fast) var(--od-ease-standard);
+}
+
+.lk-nav__item::after {
+  content: "";
+  position: absolute;
+  left: var(--od-space-3);
+  right: var(--od-space-3);
+  bottom: -1px;
+  height: 2px;
+  border-radius: var(--lk-radius-pill);
+  background-color: var(--od-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--od-dur-base) var(--od-ease-emphasized);
+}
+
+.lk-nav__item:hover {
+  color: var(--od-text);
+}
+
+.lk-nav__item:focus-visible {
+  outline: 2px solid var(--od-focus);
+  outline-offset: 2px;
+  border-radius: var(--lk-radius-sm);
+}
+
+.lk-nav__item--active,
+.lk-nav__item[aria-current="page"],
+.lk-nav__item[aria-selected="true"] {
+  color: var(--od-accent);
+}
+
+.lk-nav__item--active::after,
+.lk-nav__item[aria-current="page"]::after,
+.lk-nav__item[aria-selected="true"]::after {
+  transform: scaleX(1);
+}
+
+/* =============================================================================
+ * 13. BREADCRUMB — path trail.
+ * ========================================================================== */
+.lk-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--od-space-2);
+  font-size: var(--od-fs-sm);
+  line-height: var(--od-lh-normal);
+  color: var(--od-text-muted);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.lk-breadcrumb__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--od-space-2);
+}
+
+.lk-breadcrumb__link {
+  color: var(--od-text-muted);
+  text-decoration: none;
+  transition: color var(--od-dur-fast) var(--od-ease-standard);
+}
+
+.lk-breadcrumb__link:hover {
+  color: var(--od-accent);
+}
+
+.lk-breadcrumb__link:focus-visible {
+  outline: 2px solid var(--od-focus);
+  outline-offset: 2px;
+  border-radius: var(--lk-radius-sm);
+}
+
+/* Separator glyph between crumbs (aria-hidden in markup). */
+.lk-breadcrumb__sep {
+  color: var(--od-border);
+  user-select: none;
+}
+
+/* Current page — not a link. */
+.lk-breadcrumb__item[aria-current="page"] {
+  color: var(--od-text);
+  font-weight: 600;
+}
+
+/* =============================================================================
+ * 14. FAB — floating action button.
+ * ========================================================================== */
+.lk-fab {
+  position: fixed;
+  bottom: var(--lk-gap-lg);
+  right: var(--lk-gap-lg);
+  z-index: var(--lk-z-fab);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--od-space-2);
+  height: 3.5rem;
+  padding: 0 var(--lk-gap-lg);
+  border: 0;
+  border-radius: var(--lk-radius-pill);
+  background-color: var(--od-accent);
+  color: var(--od-on-accent);
+  font-family: var(--od-font-body);
+  font-size: var(--od-fs-base);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--lk-elev-3);
+  transition:
+    transform var(--od-dur-fast) var(--od-ease-standard),
+    background-color var(--od-dur-fast) var(--od-ease-standard);
+}
+
+.lk-fab:hover {
+  transform: translateY(-2px);
+  background-color: var(--od-accent-hover);
+}
+
+.lk-fab:active {
+  transform: translateY(0);
+}
+
+.lk-fab:focus-visible {
+  outline: 2px solid var(--od-focus);
+  outline-offset: 3px;
+}
+
+/* Icon-only, perfectly circular FAB. */
+.lk-fab--icon {
+  width: 3.5rem;
+  padding: 0;
+  justify-content: center;
+  font-size: var(--od-fs-xl);
+}
+
+/* =============================================================================
+ * 15. TOAST — a notification + its stacking region.
+ * ========================================================================== */
+.lk-toast-region {
+  position: fixed;
+  bottom: var(--lk-gap-lg);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--lk-gap-sm);
+  width: min(92vw, 24rem);
+  z-index: var(--od-z-toast);
+  pointer-events: none;
+}
+
+.lk-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--lk-gap-sm);
+  padding: var(--lk-gap-md);
+  border-radius: var(--lk-radius);
+  border-inline-start: 4px solid var(--od-accent);
+  background-color: var(--od-surface);
+  color: var(--od-text);
+  box-shadow: var(--lk-elev-3);
+  pointer-events: auto;
+  animation: lk-toast-in var(--od-dur-base) var(--od-ease-emphasized) both;
+}
+
+@keyframes lk-toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.lk-toast__icon {
+  flex: none;
+  color: var(--od-accent);
+  font-size: var(--od-fs-lg);
+  line-height: 1;
+}
+
+.lk-toast__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.lk-toast__title {
+  font-size: var(--od-fs-sm);
+  font-weight: 700;
+  color: var(--od-text);
+}
+
+.lk-toast__msg {
+  font-size: var(--od-fs-xs);
+  color: var(--od-text-muted);
+}
+
+.lk-toast__close {
+  flex: none;
+  border: 0;
+  background: transparent;
+  color: var(--od-text-muted);
+  font-size: var(--od-fs-base);
+  line-height: 1;
+  padding: var(--od-space-1);
+  border-radius: var(--lk-radius-sm);
+  cursor: pointer;
+}
+
+.lk-toast__close:hover {
+  background-color: var(--od-surface-2);
+}
+
+.lk-toast__close:focus-visible {
+  outline: 2px solid var(--od-focus);
+  outline-offset: 1px;
+}
+
+/* Semantic toast variants. */
+.lk-toast--success { border-inline-start-color: var(--od-success); }
+.lk-toast--success .lk-toast__icon { color: var(--od-success); }
+
+.lk-toast--warning { border-inline-start-color: var(--od-warning); }
+.lk-toast--warning .lk-toast__icon { color: var(--od-warning); }
+
+.lk-toast--danger { border-inline-start-color: var(--od-danger); }
+.lk-toast--danger .lk-toast__icon { color: var(--od-danger); }
+
+/* =============================================================================
+ * 99. REDUCED MOTION — disable NON-ESSENTIAL motion. Final states are kept so
+ *     nothing becomes invisible or unusable; only movement/looping is removed.
+ *     (Constitution / WCAG 2.3.3 Animation from Interactions.)
+ * ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .lk-card,
+  .lk-card--interactive:hover,
+  .lk-card--interactive:focus-within,
+  .lk-track-card,
+  .lk-track-card:hover,
+  .lk-track-card:focus-within,
+  .lk-module-card,
+  .lk-module-card--interactive:hover,
+  .lk-module-card--interactive:focus-within,
+  .lk-quiz-option,
+  .lk-quiz-option:active,
+  .lk-chip,
+  .lk-nav__item,
+  .lk-fab,
+  .lk-fab:hover,
+  .lk-fab:active {
+    transition: none !important;
+    transform: none !important;
+  }
+
+  .lk-flashcard__inner {
+    transition: none !important;
+  }
+
+  .lk-track-card__progress::before,
+  .lk-progress-ring__value,
+  .lk-progress-ring--conic {
+    transition: none !important;
+  }
+
+  .lk-nav__item::after,
+  .lk-nav__item--active::after,
+  .lk-nav__item[aria-current="page"]::after,
+  .lk-nav__item[aria-selected="true"]::after {
+    transition: none !important;
+    /* keep the active underline visible at rest */
+  }
+
+  .lk-skeleton::after {
+    animation: none !important;
+  }
+
+  .lk-toast {
+    animation: none !important;
+  }
+}
