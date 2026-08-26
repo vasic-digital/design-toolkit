@@ -1,0 +1,43 @@
+# design-toolkit — submodule dependency manifest (§11.4.31)
+#
+# design-toolkit is a leaf reusable engine: it has ZERO own-org Git
+# dependencies and declares NO nested submodules of its own (there is no
+# .gitmodules in this repository). It is inherited BY REFERENCE as a depth-1
+# submodule under the constitution submodule per the §11.4.28(C) carve-out
+# (constitution/submodules/design-toolkit/), and nests no further own-org
+# submodules.
+#
+# §11.4.6 — every field below is DERIVED from the repository as it actually
+# stands, never assumed:
+#   * ssh_url        — the ONLY remote configured on this submodule
+#                      (`git remote -v` => origin git@github.com:vasic-digital/
+#                      design-toolkit.git, fetch + push). Sibling engines
+#                      (continuum, anti_bluff) additionally carry a GitLab
+#                      mirror; design-toolkit does NOT, so none is listed here
+#                      — an unverified mirror would be a fabricated entry.
+#   * deps: []       — grep for own-org GitHub URLs across the tree returns only
+#                      (a) this repository's OWN url and (b) HelixConstitution,
+#                      the PARENT it nests under. Neither is a dependency.
+#   * project_agnostic — a census for ATMOSphere-specific literals
+#                      (atmosphere|rk3588|rockchip|orange pi) returns ZERO hits
+#                      across the tree (control-needled against a known-present
+#                      term), so §11.4.28(B)/§11.4.177 hold as stated.
+schema_version: 1
+name: design-toolkit
+ssh_url: git@github.com:vasic-digital/design-toolkit.git
+language: javascript
+language_specific_subtree: true   # the ESM generator code lives under generators/
+deps: []                          # zero own-org deps (leaf engine)
+transitive_handling:
+  recursive: true
+  conflict_resolution: operator-required
+project_agnostic: true            # §11.4.28(B)/§11.4.177 — carries no project literals
+carve_out: "§11.4.28(C) depth-1 reusable engine under constitution/submodules/"
+
+# THIRD-PARTY (non-own-org) package dependencies are OUT of §11.4.31 `deps`
+# scope, which enumerates own-org Git SSH dependencies only. They are declared
+# and pinned in generators/package.json (15 runtime + 1 optional, all permissive
+# MIT/ISC/Apache-2.0/BSD-3, license-verified there) and are installed on demand
+# — node_modules/ is NOT vendored in this tree. generators/package.json remains
+# the single authority for that set; it is deliberately not duplicated here.
+third_party_manifest: generators/package.json
