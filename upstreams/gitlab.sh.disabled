@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+#
+# INERT ON PURPOSE. The filename ends in `.disabled`, so it does NOT match the
+# `*.sh` glob that push_all.sh and install_upstreams.sh iterate over, and no
+# tooling will turn it into a remote or push to it. Read upstreams/README.md
+# before renaming it — enabling this file starts pushing to the mirror, and
+# whether that should happen is an operator decision, not a default.
+#
+export UPSTREAMABLE_REPOSITORY="git@gitlab.com:vasic-digital/design-toolkit.git"
