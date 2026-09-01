@@ -23,10 +23,17 @@
 #                      ⚠ The two surfaces are ASYMMETRIC and the mirror is STALE.
 #                      Both conditions are recorded, not smoothed over:
 #                        - GitHub is PUBLIC; the GitLab mirror is PRIVATE.
-#                        - The mirror is 3 commits BEHIND. 520c436 is an ancestor
-#                          of efd2c3f and ZERO commits exist only on GitLab, so
-#                          this is lag, not divergence. No local push URL targets
-#                          GitLab, so ordinary pushes do not close the gap.
+#                        - The mirror is BEHIND, not divergent: 520c436 is an
+#                          ancestor of GitHub's main, and ZERO commits exist
+#                          only on GitLab. It was 3 commits behind at the
+#                          measurement above. That COUNT ROTS BY CONSTRUCTION —
+#                          every commit to this repository, including the one
+#                          that introduced this note, advances GitHub's main and
+#                          leaves GitLab exactly where it is, and no local push
+#                          URL targets GitLab, so ordinary pushes never close
+#                          the gap. Re-derive it; do not read it off this line:
+#                            git fetch origin
+#                            git rev-list --count 520c436..origin/main
 #                      Syncing the mirror, and changing its visibility, are
 #                      OPERATOR decisions. Neither is taken by this manifest.
 #   * deps: []       — grep for own-org GitHub URLs across the tree returns only
@@ -61,8 +68,8 @@ schema_version: 1
 name: design-toolkit
 ssh_url: git@github.com:vasic-digital/design-toolkit.git
 mirrors:
-  - git@github.com:vasic-digital/design-toolkit.git   # PUBLIC — canonical, main efd2c3f
-  - git@gitlab.com:vasic-digital/design-toolkit.git   # PRIVATE — main 520c436, 3 commits behind
+  - git@github.com:vasic-digital/design-toolkit.git   # PUBLIC — canonical; main advances here
+  - git@gitlab.com:vasic-digital/design-toolkit.git   # PRIVATE — frozen at 520c436, behind (see header)
 language: javascript
 language_specific_subtree: true   # the ESM generator code lives under generators/
 deps: []                          # zero own-org deps (leaf engine)
