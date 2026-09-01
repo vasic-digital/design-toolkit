@@ -9,12 +9,26 @@
 #
 # §11.4.6 — every field below is DERIVED from the repository as it actually
 # stands, never assumed:
-#   * ssh_url        — the ONLY remote configured on this submodule
+#   * ssh_url        — the ONLY remote configured in this WORKING TREE
 #                      (`git remote -v` => origin git@github.com:vasic-digital/
-#                      design-toolkit.git, fetch + push). Sibling engines
-#                      (continuum, anti_bluff) additionally carry a GitLab
-#                      mirror; design-toolkit does NOT, so none is listed here
-#                      — an unverified mirror would be a fabricated entry.
+#                      design-toolkit.git, fetch + push). That is a fact about
+#                      the local remote set and about nothing else: a mirror can
+#                      exist on a forge while no local remote points at it, and
+#                      that is exactly the case here.
+#   * mirrors        — BOTH publication surfaces. Each was verified
+#                      INDEPENDENTLY with `git ls-remote` on 2026-09-01:
+#                        github.com  main efd2c3f + tags v0.2.0 / v0.2.1 / v0.2.2
+#                        gitlab.com  main 520c436 + the same three annotated
+#                                    tags, at byte-identical tag and peeled SHAs
+#                      ⚠ The two surfaces are ASYMMETRIC and the mirror is STALE.
+#                      Both conditions are recorded, not smoothed over:
+#                        - GitHub is PUBLIC; the GitLab mirror is PRIVATE.
+#                        - The mirror is 3 commits BEHIND. 520c436 is an ancestor
+#                          of efd2c3f and ZERO commits exist only on GitLab, so
+#                          this is lag, not divergence. No local push URL targets
+#                          GitLab, so ordinary pushes do not close the gap.
+#                      Syncing the mirror, and changing its visibility, are
+#                      OPERATOR decisions. Neither is taken by this manifest.
 #   * deps: []       — grep for own-org GitHub URLs across the tree returns only
 #                      (a) this repository's OWN url and (b) HelixConstitution,
 #                      the PARENT it nests under. Neither is a dependency.
@@ -22,9 +36,33 @@
 #                      (atmosphere|rk3588|rockchip|orange pi) returns ZERO hits
 #                      across the tree (control-needled against a known-present
 #                      term), so §11.4.28(B)/§11.4.177 hold as stated.
+#
+# §11.4.6 — THE ABSENCE RULE, and the defect that made it necessary.
+# Until 2026-09-01 the ssh_url note above asserted that design-toolkit carried
+# no GitLab mirror, "so none is listed here — an unverified mirror would be a
+# fabricated entry." Half of that is right and still stands: an unverified
+# mirror must NEVER be recorded as EXISTING. It does not license the converse.
+# A mirror must not be recorded as ABSENT either. Absence is itself a positive
+# claim, and it needs its own positive evidence.
+# An unauthenticated probe cannot supply that evidence. Measured 2026-09-01,
+# gitlab.com answers a PRIVATE project and a NONEXISTENT one identically —
+# 302 -> /users/sign_in from the web, and HTTP 404 from the unauthenticated API.
+# The two states are INDISTINGUISHABLE to that instrument, so the only verdict
+# it supports is COULD-NOT-DETERMINE, never "no mirror". `git remote -v` does
+# not settle it either: it describes this clone, not the forge. An instrument
+# that cannot see a thing must not report its absence.
+# Only an AUTHENTICATED query separates the two. Re-derive; do not trust:
+#     glab api projects/vasic-digital%2Fdesign-toolkit
+#     git ls-remote git@gitlab.com:vasic-digital/design-toolkit.git
+# The first distinguishes private from nonexistent — an AUTHENTICATED 404 IS
+# positive evidence of absence, an unauthenticated one is not. The second
+# re-measures the SHAs recorded above without going through any forge API.
 schema_version: 1
 name: design-toolkit
 ssh_url: git@github.com:vasic-digital/design-toolkit.git
+mirrors:
+  - git@github.com:vasic-digital/design-toolkit.git   # PUBLIC — canonical, main efd2c3f
+  - git@gitlab.com:vasic-digital/design-toolkit.git   # PRIVATE — main 520c436, 3 commits behind
 language: javascript
 language_specific_subtree: true   # the ESM generator code lives under generators/
 deps: []                          # zero own-org deps (leaf engine)
