@@ -77,11 +77,52 @@ node gen-tokens.mjs --seed milosvasic --adjectives "terminal,brutalist,mono" \
 
 ## Coverage / mapping / synthesized tokens
 
-Every candidate emits the full **75-name `--od-*` superset** (the union of both
-brand files), so it covers vasic-digital (75/75) and milosvasic (71/71). The
-M3-role → `--od-*` mapping and each synthesized (not-seed-derived) token are
+Every candidate emits the full `--od-*` superset (the union of both brand
+files). **Do not quote a token count off this page — run
+`node qa/check-tokens.mjs --candidate proposed/<brand>.od-tokens.css` and read
+its T1 line.** The "75-name superset / vasic-digital 75/75" figure this section
+used to carry is **WITHDRAWN**: the umbrella brand CSS grew an eleven-token
+diagram/status family after those candidates were generated, T1 correctly went
+red at `brand defines 86, candidate defines 75; 11 missing`, and the count has
+moved once already for exactly that reason.
+
+The M3-role → `--od-*` mapping and each synthesized (not-seed-derived) token are
 documented in the header comment of each generated file and in
 `dtcg-to-od.mjs`. Synthesized tokens: `--od-logo-plate` (constant white plate),
-status colors (`--od-success`/`--od-warning`/`--od-badge-success-bg`),
-shadow recipes, line-height, tracking, easing, z-index, container-max, and the
-named font vars (`--od-font-space-grotesk/inter/jetbrains-mono`).
+`--od-warning`, shadow recipes, line-height, tracking, easing, z-index,
+container-max, and the named font vars
+(`--od-font-space-grotesk/inter/jetbrains-mono`).
+
+### The diagram/status family is DERIVED, not copied
+
+The eleven tokens `--od-diagram-{ink,muted,line,panel,panel2,tint,good,good-line,good-ink}`
+and `--od-status-fg-{light,dark}` exist in the live `design-system/brand-*/*.css`
+as a hand-tuned **brand-neutral literal table** — the same nine slate hexes in
+both brands, by that file's own comment. Pasting those literals into
+`dtcg-to-od.mjs` would have satisfied T1 and **destroyed the premise of this
+generator**: every project seeded through it would inherit vasic.digital's slate
+diagram palette. The live values were used only as evidence of what **role** each
+token plays (measured from how the 33 SVGs in `design-system/diagrams/` and the
+`.od-badge--status` rules in both brand files consume them). The values are
+computed from the design-DNA, via three HCT tonal palettes:
+
+| Slot | Palette | Tones (light / dark) |
+|---|---|---|
+| `ink` `muted` `line` `panel` `panel2` | M3 **neutral-VARIANT** (the seed's own hue at neutral chroma) | 20 40 55 98 94 / 90 80 62 22 28 |
+| `tint` | the **primary** palette — the same one the accent ramp is built from | 92 / 22 |
+| `good` `good-line` `good-ink` | semantic success hue **harmonized ≤15° toward the brand primary** (`Blend.harmonize`) | 92 45 25 / 18 70 88 |
+| `status-fg-light` `status-fg-dark` | M3 **neutral**, theme-invariant | 99 / 12 |
+
+Tones were chosen by measurement, not taste — `qa/check-tokens.mjs` T4 asserts
+every adjacency the SVGs and status pills actually create, each against its own
+WCAG floor (text 4.5:1, non-text strokes 3:1), in both themes. T5 asserts the
+family is derived rather than tabulated. `qa/prove-three-valued-exits.sh`
+(M15/M16/M17) is the paired mutation proof that both assertions bite.
+
+**Two honest limits, both measured and printed on every run.** `--od-diagram-panel`
+and `--od-status-fg-light` sit at tone 98/99 — near the white point, where two
+different hues are a fraction of a ΔE00 apart, so they can be *identical* for two
+seeds and no separation floor is meetable by role. The `good` family is pinned
+near green by **semantics**; two seeds whose primaries share a hue get an
+identical success family. Neither is a derivation failure; both are the role
+constraining the derivation, and T5 reports them rather than gating on them.

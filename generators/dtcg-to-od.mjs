@@ -15,7 +15,7 @@
 // =============================================================================
 
 import { readFileSync, writeFileSync } from "node:fs";
-import { TonalPalette, argbFromHex, hexFromArgb } from "@material/material-color-utilities";
+import { TonalPalette, argbFromHex, hexFromArgb, Blend } from "@material/material-color-utilities";
 
 // ---- CLI -------------------------------------------------------------------
 function parseArgs(argv) {
@@ -83,6 +83,115 @@ function accentRamp(primaryHex) {
 }
 
 // =============================================================================
+// The DIAGRAM SCAFFOLD (--od-diagram-*) and the STATUS FOREGROUNDS
+// (--od-status-fg-{light,dark}) — DERIVED, never copied.
+//
+// WHY THEY ARE DERIVED AND NOT TABULATED. The live design-system/brand-*/*.css
+// carries this family as a hand-tuned, brand-NEUTRAL literal table — the same
+// nine slate hexes in both brands, by its own comment. Pasting those literals in
+// here would satisfy coverage and destroy the premise of this generator: every
+// project would inherit vasic.digital's slate diagram palette regardless of its
+// seed. The live values are used here ONLY as the evidence for what ROLE each
+// token plays; the values below are computed from the design-DNA.
+//
+// ROLES, established by measuring how design-system/diagrams/*.svg consume them
+// (33 diagrams, identical style block; property counts from the SVG CSS):
+//   --od-diagram-panel      fill of .box/.accent      — the node plate
+//   --od-diagram-panel2     fill of .dash             — the secondary/dashed plate
+//   --od-diagram-line       stroke of .box/.dash/.conn and fill of the arrowhead
+//                           marker — the neutral hairline (NON-TEXT, 1.4.11 3:1)
+//   --od-diagram-ink        fill of .t/.h             — primary label on a plate
+//   --od-diagram-muted      fill of .s/.lbl/.note     — secondary label
+//   --od-diagram-tint       fill of .tint, stroked with --od-accent — the
+//                           ACCENT-tinted plate (the one brand-carrying slot)
+//   --od-diagram-good       fill of .good             — success plate
+//   --od-diagram-good-line  stroke of .good           — success edge (NON-TEXT)
+//   --od-diagram-good-ink   fill of .gt               — label on the success plate
+//   --od-status-fg-light    theme-INVARIANT light foreground on the fixed
+//                           semantic success fills (.od-badge--status--beta,
+//                           --production/--shipped/--active/--stable)
+//   --od-status-fg-dark     theme-INVARIANT dark foreground on --od-warning
+//                           (.od-badge--status--in-development)
+//
+// DERIVATION — three HCT tonal palettes, all functions of the DTCG document:
+//   scaffold  TonalPalette.fromInt(light `surface-variant`)  = M3's NEUTRAL-VARIANT
+//             palette, which carries the seed's own hue and neutral chroma. This
+//             is what makes one seed's scaffold warm-tan and another's cool-grey.
+//   tint      TonalPalette.fromInt(light `primary`)          = the SAME palette
+//             the accent ramp above is built from, so the tinted plate is
+//             literally the brand accent at a plate tone.
+//   good      TonalPalette.fromInt(Blend.harmonize(SUCCESS_HUE_ANCHOR, primary))
+//             A success plate must still read as SUCCESS, so its hue cannot be
+//             the seed's. Blend.harmonize rotates the semantic green toward the
+//             brand primary by AT MOST 15deg (MCU's own bound) — green stays
+//             green, but a warm brand's green is warmed and a cool brand's
+//             cooled. HONEST BOUNDARY: two seeds whose primaries share a hue get
+//             the SAME good family. That is the semantic constraint doing its
+//             job, not a derivation failure, and it is measured in the report.
+//   status    TonalPalette.fromInt(light `background`)       = M3's NEUTRAL
+//             palette; tone 99/12 are the brand's own near-white / near-black.
+//
+// TONES were chosen by MEASUREMENT, not taste — every adjacency the SVGs
+// actually create is held above its WCAG floor (text 4.5:1, non-text 3:1) across
+// every seed probed. The hairline is deliberately DARKER than the live brand
+// CSS's, because the live value does not clear its floor: the live
+// `--od-diagram-line #94a3b8` on the live `--od-diagram-panel #f8fafc` measures
+// **2.45:1** in the light theme, below the 3:1 non-text floor of WCAG 1.4.11.
+// (That is a measurement of the live design-system, which this module does not
+// own and did not change.) Tone 55 light / 62 dark was picked as the step
+// nearest the live one that still clears BOTH plates, not merely the node plate:
+// an earlier draft at tone 58 cleared `panel` at 3.20:1 and FAILED `panel2` at
+// 2.91:1 — the dashed plate is the tighter of the two and is easy to forget.
+// See qa/check-tokens.mjs T4 for the executable assertions.
+// =============================================================================
+const DIAGRAM_TONES = {
+  light: { panel: 98, panel2: 94, ink: 20, muted: 40, line: 55, tint: 92, good: 92, goodLine: 45, goodInk: 25 },
+  dark: { panel: 22, panel2: 28, ink: 90, muted: 80, line: 62, tint: 22, good: 18, goodLine: 70, goodInk: 88 },
+};
+// Tone of the NEUTRAL palette used for each theme-invariant status foreground.
+const STATUS_FG_TONES = { light: 99, dark: 12 };
+// Tones of the harmonized success palette used for the two semantic success
+// FILLS. Both are theme-invariant by design (see emit), which is what the live
+// brand CSS says these fills are meant to be.
+const SUCCESS_FILL_TONES = { success: 40, badge: 36 };
+// The semantic success hue anchor. Same literal this generator already emitted
+// for --od-success, kept so the change is a refinement of an existing value
+// rather than a new opinion; it is harmonized toward the brand primary before
+// any tone is taken from it.
+const SUCCESS_HUE_ANCHOR = "#2e7d32";
+
+/** Build the three derived palettes from a DTCG light scheme. Pure. */
+function derivedPalettes(lightScheme) {
+  const hexOf = (name) => val(lightScheme[name]);
+  return {
+    scaffold: TonalPalette.fromInt(argbFromHex(hexOf("surface-variant"))),
+    tint: TonalPalette.fromInt(argbFromHex(hexOf("primary"))),
+    good: TonalPalette.fromInt(
+      Blend.harmonize(argbFromHex(SUCCESS_HUE_ANCHOR), argbFromHex(hexOf("primary")))
+    ),
+    neutral: TonalPalette.fromInt(argbFromHex(hexOf("background"))),
+  };
+}
+const toneHex = (palette, tone) => hexFromArgb(palette.tone(tone));
+
+/** The nine --od-diagram-* values for one theme. Pure. */
+function diagramFamily(pal, mode) {
+  const t = DIAGRAM_TONES[mode];
+  return {
+    "ink": toneHex(pal.scaffold, t.ink),
+    "muted": toneHex(pal.scaffold, t.muted),
+    "line": toneHex(pal.scaffold, t.line),
+    "panel": toneHex(pal.scaffold, t.panel),
+    "panel2": toneHex(pal.scaffold, t.panel2),
+    "tint": toneHex(pal.tint, t.tint),
+    "good": toneHex(pal.good, t.good),
+    "good-line": toneHex(pal.good, t.goodLine),
+    "good-ink": toneHex(pal.good, t.goodInk),
+  };
+}
+const DIAGRAM_ORDER = ["ink", "muted", "line", "panel", "panel2", "tint", "good", "good-line", "good-ink"];
+
+// =============================================================================
 // M3 role -> --od-* SEMANTIC MAPPING (documented; see header comment on emit)
 //   --od-bg          <- background
 //   --od-surface     <- surface-container-low
@@ -95,9 +204,15 @@ function accentRamp(primaryHex) {
 //   --od-danger      <- error
 //   --od-accent(-hover/-active) -> var() into the accent ramp (light: 700/800/900;
 //                       dark: 300/200/100 — lighter steps for a dark surface)
+// DNA-DERIVED, not an M3 role (see the DIAGRAM SCAFFOLD block above):
+//   --od-diagram-*   <- HCT tonal palettes of neutral-variant / primary /
+//                       harmonized-success, at measured tones
+//   --od-status-fg-* <- neutral palette tone 99 / 12 (theme-invariant)
+//   --od-success / --od-badge-success-bg <- harmonized-success tone 40 / 36
+//                       (theme-invariant; see the AA finding recorded on emit)
 // SYNTHESIZED (not seed-derived; sensible fixed values matching the live CSS):
 //   --od-logo-plate  = #ffffff (intentional constant white plate, both themes)
-//   --od-success / --od-warning / --od-badge-success-bg = fixed status greens/amber
+//   --od-warning     = fixed status amber
 //   --od-shadow-color = rgba(shadow-role, alpha)
 //   named font vars, line-height, tracking, shadow recipes, easing, z, container-max
 // =============================================================================
@@ -108,6 +223,18 @@ function convert(doc) {
   if (!L || !D) throw new Error("input is not a gen-tokens DTCG document (missing color.light/color.dark)");
   const cl = (m, name) => val(m[name]);          // color hex for a role
   const ramp = accentRamp(cl(L, "primary"));
+
+  // --- DNA-derived diagram scaffold + theme-invariant status foregrounds -----
+  const pal = derivedPalettes(L);
+  const diagram = { light: diagramFamily(pal, "light"), dark: diagramFamily(pal, "dark") };
+  const statusFg = {
+    light: toneHex(pal.neutral, STATUS_FG_TONES.light),
+    dark: toneHex(pal.neutral, STATUS_FG_TONES.dark),
+  };
+  const successFill = {
+    success: toneHex(pal.good, SUCCESS_FILL_TONES.success),
+    badge: toneHex(pal.good, SUCCESS_FILL_TONES.badge),
+  };
 
   const ts = doc.typography["type-scale"];
   const sp = doc.dimension.space;
@@ -149,12 +276,12 @@ function convert(doc) {
   // --- durations derived from the DTCG motion group (ms) ----------------------
   const durMs = (name, fallback) => { const v = val(motion[name]); return v && typeof v === "object" ? `${v.value}ms` : fallback; };
 
-  return { ramp, fs, space, radius, ffam, motion, cl, L, D, durMs, doc };
+  return { ramp, fs, space, radius, ffam, motion, cl, L, D, durMs, doc, diagram, statusFg, successFill };
 }
 
 // ---- CSS emission (deterministic, fixed key order) -------------------------
 function emitCss(model, meta) {
-  const { ramp, fs, space, radius, ffam, cl, L, D, durMs } = model;
+  const { ramp, fs, space, radius, ffam, cl, L, D, durMs, diagram, statusFg, successFill } = model;
   const lines = [];
   const p = (s) => lines.push(s);
   // Comment-safe emit: neutralize any "*/" so a comment can never self-close
@@ -185,7 +312,17 @@ function emitCss(model, meta) {
   p(" *   --od-on-accent<-on-primary  --od-focus<-primary@0.6  --od-danger<-error");
   p(" *   --od-accent-{50..900} <- HCT TonalPalette of primary (700==primary tone 40)");
   p(" *   --od-accent/-hover/-active -> ramp 700/800/900 (light), 300/200/100 (dark)");
-  p(" * Synthesized constants: --od-logo-plate(#fff), status colors, shadow recipes,");
+  p(" * DNA-derived (HCT tonal palettes, not M3 roles — see dtcg-to-od.mjs):");
+  p(" *   --od-diagram-{ink,muted,line,panel,panel2} <- neutral-VARIANT palette");
+  p(" *     (light tones 20/40/55/98/94, dark 90/80/62/22/28)");
+  p(" *   --od-diagram-tint <- primary palette (light 92, dark 22)");
+  p(" *   --od-diagram-good{,-line,-ink} <- success hue harmonized <=15deg toward");
+  p(" *     primary (light tones 92/45/25, dark 18/70/88)");
+  p(" *   --od-status-fg-{light,dark} <- neutral palette tone 99/12, theme-INVARIANT");
+  p(" *   --od-success/--od-badge-success-bg <- harmonized success tone 40/36,");
+  p(" *     theme-INVARIANT (a fill that flipped under a fixed foreground measured");
+  p(" *     4.26:1 in dark — below WCAG AA; see the T4 status pairs)");
+  p(" * Synthesized constants: --od-logo-plate(#fff), --od-warning, shadow recipes,");
   p(" *   line-height, tracking, easing, z-index, container-max, named font vars.");
   p(" * ========================================================================== */");
   p("");
@@ -211,12 +348,26 @@ function emitCss(model, meta) {
   p(`  --od-on-accent: ${cl(L, "on-primary")};`);
   p(`  --od-focus: ${rgba(cl(L, "primary"), 0.6)};`);
   p("");
-  p("  /* Status (danger<-M3 error; success/warning synthesized). */");
-  p("  --od-success: #2e7d32;");
+  p("  /* Status (danger<-M3 error; warning synthesized; success DNA-derived). */");
+  p("  /* --od-success and --od-badge-success-bg are the semantic success FILLS a");
+  p("     status pill paints behind --od-status-fg-light. They are deliberately NOT");
+  p("     re-declared in the dark blocks: a fixed foreground over a fill that flips");
+  p("     with the theme cannot clear AA in both themes, and the flipping fill this");
+  p("     generator used to emit (#2b8a3e) measured 4.26:1 under ANY light");
+  p("     foreground — below WCAG AA 4.5:1. Tone 40/36 of the harmonized success");
+  p("     palette clears it in both themes with the derived --od-status-fg-light. */");
+  p(`  --od-success: ${successFill.success};`);
   p("  --od-warning: #d97706;");
   p(`  --od-danger: ${cl(L, "error")};`);
-  p("  --od-badge-success-bg: #1e7e34; /* synthesized: AA green behind white text */");
+  p(`  --od-badge-success-bg: ${successFill.badge};`);
   p(`  --od-shadow-color: ${rgba(cl(L, "shadow") || "#000000", 0.12)};`);
+  p("");
+  p("  /* Theme-INVARIANT status-pill foregrounds — neutral palette tone 99/12. */");
+  p(`  --od-status-fg-light: ${statusFg.light};`);
+  p(`  --od-status-fg-dark: ${statusFg.dark};`);
+  p("");
+  p("  /* Diagram scaffold (§11.4.162) — DNA-derived, see dtcg-to-od.mjs. */");
+  for (const k of DIAGRAM_ORDER) p(`  --od-diagram-${k}: ${diagram.light[k]};`);
   p("");
   p("  /* Fonts (display/body/mono from DTCG; named vars kept for compatibility). */");
   p(`  --od-font-display: ${fam(ffam.display)};`);
@@ -280,11 +431,13 @@ function emitCss(model, meta) {
     "  --od-accent-active: var(--od-accent-100);",
     `  --od-on-accent: ${cl(D, "on-primary")};`,
     `  --od-focus: ${rgba(cl(D, "primary"), 0.6)};`,
-    "  --od-success: #2b8a3e;",
+    // --od-success / --od-badge-success-bg are INTENTIONALLY absent here: they
+    // sit under the theme-invariant --od-status-fg-light, so flipping them
+    // breaks AA in one theme by construction. See the :root block.
     "  --od-warning: #f59e0b;",
     `  --od-danger: ${cl(D, "error")};`,
-    "  --od-badge-success-bg: #2b8a3e;",
     `  --od-shadow-color: ${rgba(cl(D, "shadow") || "#000000", 0.5)};`,
+    ...DIAGRAM_ORDER.map((k) => `  --od-diagram-${k}: ${diagram.dark[k]};`),
   ];
   p(":root[data-theme=\"dark\"] {");
   darkVars.forEach((l) => p(l));

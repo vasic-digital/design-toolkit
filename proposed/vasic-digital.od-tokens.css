@@ -15,7 +15,17 @@
  *   --od-on-accent<-on-primary  --od-focus<-primary@0.6  --od-danger<-error
  *   --od-accent-{50..900} <- HCT TonalPalette of primary (700==primary tone 40)
  *   --od-accent/-hover/-active -> ramp 700/800/900 (light), 300/200/100 (dark)
- * Synthesized constants: --od-logo-plate(#fff), status colors, shadow recipes,
+ * DNA-derived (HCT tonal palettes, not M3 roles — see dtcg-to-od.mjs):
+ *   --od-diagram-{ink,muted,line,panel,panel2} <- neutral-VARIANT palette
+ *     (light tones 20/40/55/98/94, dark 90/80/62/22/28)
+ *   --od-diagram-tint <- primary palette (light 92, dark 22)
+ *   --od-diagram-good{,-line,-ink} <- success hue harmonized <=15deg toward
+ *     primary (light tones 92/45/25, dark 18/70/88)
+ *   --od-status-fg-{light,dark} <- neutral palette tone 99/12, theme-INVARIANT
+ *   --od-success/--od-badge-success-bg <- harmonized success tone 40/36,
+ *     theme-INVARIANT (a fill that flipped under a fixed foreground measured
+ *     4.26:1 in dark — below WCAG AA; see the T4 status pairs)
+ * Synthesized constants: --od-logo-plate(#fff), --od-warning, shadow recipes,
  *   line-height, tracking, easing, z-index, container-max, named font vars.
  * ========================================================================== */
 
@@ -48,12 +58,34 @@
   --od-on-accent: #ffffff;
   --od-focus: rgba(116, 46, 51, 0.6);
 
-  /* Status (danger<-M3 error; success/warning synthesized). */
-  --od-success: #2e7d32;
+  /* Status (danger<-M3 error; warning synthesized; success DNA-derived). */
+  /* --od-success and --od-badge-success-bg are the semantic success FILLS a
+     status pill paints behind --od-status-fg-light. They are deliberately NOT
+     re-declared in the dark blocks: a fixed foreground over a fill that flips
+     with the theme cannot clear AA in both themes, and the flipping fill this
+     generator used to emit (#2b8a3e) measured 4.26:1 under ANY light
+     foreground — below WCAG AA 4.5:1. Tone 40/36 of the harmonized success
+     palette clears it in both themes with the derived --od-status-fg-light. */
+  --od-success: #426900;
   --od-warning: #d97706;
   --od-danger: #900009;
-  --od-badge-success-bg: #1e7e34; /* synthesized: AA green behind white text */
+  --od-badge-success-bg: #3b5e00;
   --od-shadow-color: rgba(0, 0, 0, 0.12);
+
+  /* Theme-INVARIANT status-pill foregrounds — neutral palette tone 99/12. */
+  --od-status-fg-light: #fffbff;
+  --od-status-fg-dark: #211f1f;
+
+  /* Diagram scaffold (§11.4.162) — DNA-derived, see dtcg-to-od.mjs. */
+  --od-diagram-ink: #3c2d2c;
+  --od-diagram-muted: #6c5a5a;
+  --od-diagram-line: #937f7e;
+  --od-diagram-panel: #fff8f7;
+  --od-diagram-panel2: #ffe9e8;
+  --od-diagram-tint: #ffe1e1;
+  --od-diagram-good: #c7f885;
+  --od-diagram-good-line: #4e7610;
+  --od-diagram-good-ink: #284200;
 
   /* Fonts (display/body/mono from DTCG; named vars kept for compatibility). */
   --od-font-display: Fraunces, system-ui, sans-serif;
@@ -132,11 +164,18 @@
   --od-accent-active: var(--od-accent-100);
   --od-on-accent: #450a11;
   --od-focus: rgba(255, 179, 180, 0.6);
-  --od-success: #2b8a3e;
   --od-warning: #f59e0b;
   --od-danger: #ffb4ab;
-  --od-badge-success-bg: #2b8a3e;
   --od-shadow-color: rgba(0, 0, 0, 0.5);
+  --od-diagram-ink: #f6dddc;
+  --od-diagram-muted: #d9c1c0;
+  --od-diagram-line: #a69190;
+  --od-diagram-panel: #403131;
+  --od-diagram-panel2: #4f3e3e;
+  --od-diagram-tint: #5f1e24;
+  --od-diagram-good: #1d3200;
+  --od-diagram-good-line: #8cb94f;
+  --od-diagram-good-ink: #bcec7b;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -152,10 +191,17 @@
     --od-accent-active: var(--od-accent-100);
     --od-on-accent: #450a11;
     --od-focus: rgba(255, 179, 180, 0.6);
-    --od-success: #2b8a3e;
     --od-warning: #f59e0b;
     --od-danger: #ffb4ab;
-    --od-badge-success-bg: #2b8a3e;
     --od-shadow-color: rgba(0, 0, 0, 0.5);
+    --od-diagram-ink: #f6dddc;
+    --od-diagram-muted: #d9c1c0;
+    --od-diagram-line: #a69190;
+    --od-diagram-panel: #403131;
+    --od-diagram-panel2: #4f3e3e;
+    --od-diagram-tint: #5f1e24;
+    --od-diagram-good: #1d3200;
+    --od-diagram-good-line: #8cb94f;
+    --od-diagram-good-ink: #bcec7b;
   }
 }

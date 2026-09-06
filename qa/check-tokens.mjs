@@ -22,12 +22,28 @@
 //                        NOT sufficient, only the CSSOM tells the truth.
 //   T3 Determinism       gen-tokens -> dtcg-to-od run twice for a seed is
 //                        byte-identical (and reproduces the on-disk candidate).
-//   T4 Contrast (WCAG21) --od-text/--od-bg and --od-on-accent/--od-accent, light
-//                        + dark, all >= 4.5:1 (var()-into-ramp resolved). Ratios
-//                        reported (colorjs.io via generators/lib/color.mjs).
+//   T4 Contrast (WCAG21) every adjacency the design-system actually creates,
+//                        light + dark, each against ITS OWN floor: text pairs at
+//                        --min-contrast (4.5:1, 1.4.3), non-text strokes at 3:1
+//                        (1.4.11). Covers --od-text/--od-bg, --od-on-accent/
+//                        --od-accent, the nine --od-diagram-* adjacencies the
+//                        diagram SVGs create, and each --od-status-fg-* against
+//                        the semantic fill its status pill paints behind — in
+//                        BOTH themes, which is what catches a fill that flips out
+//                        from under a theme-invariant foreground. var()-into-ramp
+//                        resolved. Ratios reported (colorjs.io via
+//                        generators/lib/color.mjs).
 //   T5 Uniqueness        two DIFFERENT seeds -> accent primaries separated by a
 //                        min hue delta AND min ΔE00 (qa/lib/deltae.mjs); same
-//                        seed -> identical accent (determinism corollary).
+//                        seed -> identical accent (determinism corollary). ALSO
+//                        asserts the diagram/status family is DERIVED and not a
+//                        hardcoded table, each token gated at the floor its ROLE
+//                        can meet: the accent-derived --od-diagram-tint at the
+//                        full ΔE00 threshold, the neutral-variant ink/muted/line
+//                        scaffold at the CIEDE2000 just-noticeable difference,
+//                        and the seven pinned at a neutral or semantic extreme
+//                        measured and printed but not gated — with the reason
+//                        stated, not assumed.
 //
 // Usage:
 //   node check-tokens.mjs --candidate ../proposed/vasic-digital.od-tokens.css
@@ -378,38 +394,84 @@ function runT4() {
   const dark = new Map(light);
   for (const [k, v] of darkOverrides) dark.set(k, v);
 
+  // Every pair carries the WCAG floor its OWN role requires. `text` uses
+  // --min-contrast (4.5:1, WCAG 1.4.3 normal text); `nonText` uses 3.0:1 (WCAG
+  // 1.4.11 non-text contrast) because a 1.5px diagram stroke is a graphical
+  // object, not text. That 3.0 is the standard's floor for that role — it is NOT
+  // a relaxation of the text floor, and no text pair is ever measured against it.
+  //
+  // The diagram/status pairs are the adjacencies the design-system's own diagram
+  // SVGs and status-pill rules actually create (measured across the 33 diagrams
+  // in design-system/diagrams/ and the .od-badge--status rules in both brand
+  // files), NOT every possible combination:
+  //   .box/.dash  = panel/panel2 filled, stroked with line
+  //   .t/.h .s/.lbl/.note = ink/muted labels on those plates
+  //   .tint       = tint filled, stroked with --od-accent, carrying ink labels
+  //   .good/.gt   = good filled, stroked good-line, carrying good-ink labels
+  //   status pills = status-fg-light on --od-success / --od-badge-success-bg,
+  //                  status-fg-dark on --od-warning
+  // The status foregrounds are theme-INVARIANT by contract, so they are measured
+  // against BOTH themes' fills — which is precisely the check that catches a fill
+  // that flips out from under a foreground that does not.
+  const NON_TEXT = 3.0;
   const PAIRS = [
-    { fg: "--od-text", bg: "--od-bg", role: "body text" },
-    { fg: "--od-on-accent", bg: "--od-accent", role: "label on accent fill" },
+    { fg: "--od-text", bg: "--od-bg", role: "body text", min: args.minContrast },
+    { fg: "--od-on-accent", bg: "--od-accent", role: "label on accent fill", min: args.minContrast },
+    // diagram scaffold — text
+    { fg: "--od-diagram-ink", bg: "--od-diagram-panel", role: "diagram label on node plate", min: args.minContrast },
+    { fg: "--od-diagram-ink", bg: "--od-diagram-panel2", role: "diagram label on dashed plate", min: args.minContrast },
+    { fg: "--od-diagram-ink", bg: "--od-diagram-tint", role: "diagram label on accent-tinted plate", min: args.minContrast },
+    { fg: "--od-diagram-muted", bg: "--od-diagram-panel", role: "diagram sub-label on node plate", min: args.minContrast },
+    { fg: "--od-diagram-muted", bg: "--od-diagram-panel2", role: "diagram sub-label on dashed plate", min: args.minContrast },
+    { fg: "--od-diagram-good-ink", bg: "--od-diagram-good", role: "diagram label on success plate", min: args.minContrast },
+    // diagram scaffold — non-text strokes (WCAG 1.4.11)
+    { fg: "--od-diagram-line", bg: "--od-diagram-panel", role: "diagram hairline on node plate", min: NON_TEXT },
+    { fg: "--od-diagram-line", bg: "--od-diagram-panel2", role: "diagram hairline on dashed plate", min: NON_TEXT },
+    { fg: "--od-diagram-line", bg: "--od-bg", role: "diagram connector/arrowhead on page", min: NON_TEXT },
+    { fg: "--od-diagram-good-line", bg: "--od-diagram-good", role: "success plate edge", min: NON_TEXT },
+    { fg: "--od-accent", bg: "--od-diagram-tint", role: "accent edge on tinted plate", min: NON_TEXT },
+    // status pills — theme-invariant foregrounds over their semantic fills
+    { fg: "--od-status-fg-light", bg: "--od-success", role: "status pill text on success fill", min: args.minContrast },
+    { fg: "--od-status-fg-light", bg: "--od-badge-success-bg", role: "shipped pill text on badge success fill", min: args.minContrast },
+    { fg: "--od-status-fg-dark", bg: "--od-warning", role: "in-development pill text on warning fill", min: args.minContrast },
   ];
   const rows = [];
   for (const [mode, map] of [["light", light], ["dark", dark]]) {
-    for (const { fg, bg, role } of PAIRS) {
+    for (const { fg, bg, role, min } of PAIRS) {
       const fgHex = resolveValue(map, fg);
       const bgHex = resolveValue(map, bg);
       const hexRe = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
       if (!fgHex || !bgHex || !hexRe.test(fgHex) || !hexRe.test(bgHex)) {
-        rows.push({ mode, pair: `${fg}/${bg}`, role, fg: fgHex, bg: bgHex, ratio: null, pass: false, reason: "unresolvable to a hex color" });
+        rows.push({ mode, pair: `${fg}/${bg}`, role, threshold: min, fg: fgHex, bg: bgHex, ratio: null, pass: false, reason: "unresolvable to a hex color" });
         continue;
       }
       const ratio = Math.round(contrastRatio(fgHex, bgHex) * 100) / 100;
-      rows.push({ mode, pair: `${fg}/${bg}`, role, fg: fgHex, bg: bgHex, ratio, pass: ratio >= args.minContrast });
+      rows.push({ mode, pair: `${fg}/${bg}`, role, threshold: min, fg: fgHex, bg: bgHex, ratio, pass: ratio >= min });
     }
   }
   const fails = rows.filter((r) => !r.pass);
   const measurable = rows.filter((r) => r.ratio != null);
   const minRatio = measurable.length ? Math.min(...measurable.map((r) => r.ratio)) : null;
+  // Report the tightest MARGIN as well as the tightest ratio: with mixed
+  // thresholds a bare "min ratio" no longer says how close the run came to
+  // failing (a 3.2:1 stroke is tighter than a 5:1 label, but reads larger).
+  const margins = measurable.map((r) => Math.round((r.ratio - r.threshold) * 100) / 100);
+  const minMargin = margins.length ? Math.min(...margins) : null;
   const pass = fails.length === 0;
   push({
     challenge: "T4-contrast-wcag21",
     verdict: pass ? "PASS" : "FAIL",
     rationale: pass
-      ? `all ${rows.length} text/accent pairs clear ${args.minContrast}:1 in both modes (min ${minRatio}:1)`
-      : `${fails.length} pair(s) below ${args.minContrast}:1 (or unresolvable)`,
-    measurements: { metric: "WCAG 2.1 relative-luminance contrast (colorjs.io)", threshold: args.minContrast, minRatio, rows },
+      ? `all ${rows.length} pairs clear their own WCAG floor in both modes (text ${args.minContrast}:1, non-text ${NON_TEXT}:1; min ratio ${minRatio}:1, tightest margin +${minMargin})`
+      : `${fails.length} pair(s) below their WCAG floor (or unresolvable)`,
+    measurements: {
+      metric: "WCAG 2.1 relative-luminance contrast (colorjs.io)",
+      textThreshold: args.minContrast, nonTextThreshold: NON_TEXT,
+      minRatio, minMargin, rows,
+    },
   });
-  log(`T4 contrast: ${pass ? "PASS" : "FAIL"} (${rows.length} pairs; min ${minRatio}:1; threshold ${args.minContrast}:1)`);
-  for (const r of rows) log(`   - ${r.pass ? "PASS" : "FAIL"} ${r.mode} ${r.pair} ${r.fg}/${r.bg} = ${r.ratio == null ? r.reason : r.ratio + ":1"}`);
+  log(`T4 contrast: ${pass ? "PASS" : "FAIL"} (${rows.length} pairs; min ${minRatio}:1; tightest margin +${minMargin}; text ${args.minContrast}:1 / non-text ${NON_TEXT}:1)`);
+  for (const r of rows) log(`   - ${r.pass ? "PASS" : "FAIL"} ${r.mode} ${r.pair} ${r.fg}/${r.bg} = ${r.ratio == null ? r.reason : r.ratio + ":1"} (>=${r.threshold})`);
 }
 
 // ============================================================================
@@ -419,6 +481,60 @@ function runT4() {
 function accent700(css) {
   const light = blockDeclarations(css, /:root(?![\w[])/);
   return resolveValue(light, "--od-accent-700");
+}
+
+// The eleven tokens the diagram/status family adds, each gated at the floor its
+// ROLE can actually meet. The point of the assertion is to catch a HARDCODED
+// TABLE — the live design-system carries this family as a brand-neutral literal
+// table, and pasting it into the generator would satisfy coverage while making
+// every project's diagrams identical. A hardcoded table scores ΔE00 exactly 0 on
+// every row, so it cannot pass any of the three tiers below.
+//
+// The three tiers, and why one flat threshold would be wrong:
+//
+//   "brand"   ΔE00 >= --de00-threshold (10, the same floor the accent uses).
+//             Only --od-diagram-tint qualifies: it IS the brand accent at a
+//             plate tone, so it must carry the accent's own separation.
+//
+//   "jnd"     ΔE00 >= 1.0 — the CIEDE2000 just-noticeable difference. The
+//             ink/muted/line scaffold is M3's NEUTRAL-VARIANT palette: a neutral
+//             tinted by the seed's hue at single-digit chroma. Demanding ΔE00>=10
+//             of a neutral is demanding that it stop being neutral, and the live
+//             brand CSS is explicit that the scaffold is brand-NEUTRAL by design.
+//             What is honestly assertable is that two seeds' scaffolds are
+//             PERCEPTIBLY different, not that they are different colours.
+//             MEASURED, not assumed: a first draft of this gate used the flat
+//             ΔE00>=10 floor here and reported FAIL at 2.56–2.82 for the shipped
+//             seed pair. The finding was about the THRESHOLD, not the tokens.
+//
+//   reported  Not gated at all, with the reason stated rather than implied.
+//             --od-diagram-panel/-panel2 sit at tone 98/94 and
+//             --od-status-fg-light at tone 99: near the white point two hues are
+//             a fraction of a ΔE00 apart (panel measures 0.00 — IDENTICAL — for
+//             the shipped pair), so no separation floor is meetable by role.
+//             --od-diagram-good{,-line,-ink} are pinned near green by SEMANTICS;
+//             they separate only through the <=15deg harmonization toward the
+//             brand primary, and two seeds whose primaries share a hue get an
+//             IDENTICAL success family. That is the semantic constraint working.
+const JND_DELTA_E00 = 1.0;
+const NEW_FAMILY_TIERS = [
+  { token: "--od-diagram-tint", tier: "brand" },
+  { token: "--od-diagram-ink", tier: "jnd" },
+  { token: "--od-diagram-muted", tier: "jnd" },
+  { token: "--od-diagram-line", tier: "jnd" },
+  { token: "--od-diagram-panel", tier: "reported" },
+  { token: "--od-diagram-panel2", tier: "reported" },
+  { token: "--od-diagram-good", tier: "reported" },
+  { token: "--od-diagram-good-line", tier: "reported" },
+  { token: "--od-diagram-good-ink", tier: "reported" },
+  { token: "--od-status-fg-light", tier: "reported" },
+  { token: "--od-status-fg-dark", tier: "reported" },
+];
+function lightTokens(css, names) {
+  const light = blockDeclarations(css, /:root(?![\w[])/);
+  const out = {};
+  for (const n of names) out[n] = resolveValue(light, n);
+  return out;
 }
 function runT5() {
   const prov = parseProvenance(candidateCss);
@@ -446,22 +562,67 @@ function runT5() {
   const dHue = Math.round(hueDelta(oklchHue(aHex), oklchHue(bHex)) * 100) / 100;
   const dE = Math.round(deltaE00(aHex, bHex) * 100) / 100;
   const distinctPass = dHue >= args.hueThreshold && dE >= args.de00Threshold;
-  const pass = sameSeedIdentical && distinctPass && aHex !== bHex;
+
+  // ---- the diagram/status family must be DERIVED, not tabulated -------------
+  const allNames = NEW_FAMILY_TIERS.map((t) => t.token);
+  const famA = lightTokens(cssA, allNames);
+  const famA2 = lightTokens(cssA2, allNames);
+  const famB = lightTokens(cssB, allNames);
+  const hexRe = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+  const floorFor = (tier) => (tier === "brand" ? args.de00Threshold : tier === "jnd" ? JND_DELTA_E00 : null);
+  const familyRows = NEW_FAMILY_TIERS.map(({ token: name, tier }) => {
+    const a = famA[name], b = famB[name];
+    const floor = floorFor(tier);
+    if (!a || !b || !hexRe.test(a) || !hexRe.test(b)) {
+      return { token: name, tier, floor, a, b, deltaE00: null, identical: null, pass: floor == null, reason: "not defined / not a hex color in one of the two generated candidates" };
+    }
+    const d = Math.round(deltaE00(a, b) * 100) / 100;
+    return { token: name, tier, floor, a, b, deltaE00: d, identical: a === b, pass: floor == null ? true : d >= floor };
+  });
+  // Same-seed reproducibility of the family (the determinism corollary, applied
+  // to the new tokens rather than to the accent alone).
+  const familySameSeedIdentical = allNames.every((n) => famA[n] === famA2[n]);
+  const familyFails = familyRows.filter((r) => !r.pass);
+  const familyPass = familyFails.length === 0 && familySameSeedIdentical;
+
+  const pass = sameSeedIdentical && distinctPass && aHex !== bHex && familyPass;
+  const gatedRows = familyRows.filter((r) => r.floor != null);
+  const familyMinGated = gatedRows
+    .filter((r) => r.deltaE00 != null)
+    .reduce((m, r) => (m == null || r.deltaE00 < m ? r.deltaE00 : m), null);
+  const gatedCount = gatedRows.length;
+  const reportedCount = familyRows.length - gatedCount;
   push({
     challenge: "T5-uniqueness",
     verdict: pass ? "PASS" : "FAIL",
     rationale: pass
-      ? `seeds "${seedA}"/"${seedB}" yield accent-700 separated by hue ${dHue}deg (>=${args.hueThreshold}) and ΔE00 ${dE} (>=${args.de00Threshold}); same seed identical`
+      ? `seeds "${seedA}"/"${seedB}" yield accent-700 separated by hue ${dHue}deg (>=${args.hueThreshold}) and ΔE00 ${dE} (>=${args.de00Threshold}); the ${gatedCount} gated diagram/status tokens all clear their tier's floor (min ΔE00 ${familyMinGated}); same seed identical`
       : !sameSeedIdentical
         ? `same seed "${seedA}" produced DIFFERENT accent-700 across runs (${aHex} vs ${a2Hex}) — non-deterministic`
-        : `seeds too close: hue delta ${dHue}deg (>=${args.hueThreshold}?), ΔE00 ${dE} (>=${args.de00Threshold}?)`,
+        : !familySameSeedIdentical
+          ? `same seed "${seedA}" produced a DIFFERENT diagram/status family across runs — non-deterministic`
+          : familyFails.length
+            ? `${familyFails.length} gated diagram/status token(s) do not separate across seeds (${familyFails.map((r) => `${r.token} ΔE00 ${r.deltaE00} < ${r.floor}`).join("; ")}) — a hardcoded family, not a derivation`
+            : `seeds too close: hue delta ${dHue}deg (>=${args.hueThreshold}?), ΔE00 ${dE} (>=${args.de00Threshold}?)`,
     measurements: {
       seedA, seedB, accentA: aHex, accentB: bHex, sameSeedAccent: a2Hex,
       oklchHueA: hueA, oklchHueB: hueB, hueDelta: dHue, hueThreshold: args.hueThreshold,
       deltaE00: dE, de00Threshold: args.de00Threshold, sameSeedIdentical,
+      newFamily: {
+        tiers: { brand: args.de00Threshold, jnd: JND_DELTA_E00, reported: null },
+        gatedCount, reportedCount,
+        minGatedDeltaE00: familyMinGated, sameSeedIdentical: familySameSeedIdentical,
+        identicalAcrossSeeds: familyRows.filter((r) => r.identical === true).map((r) => r.token),
+        rows: familyRows,
+      },
     },
   });
   log(`T5 uniqueness: ${pass ? "PASS" : "FAIL"} (${seedA} ${aHex} vs ${seedB} ${bHex}; hue Δ ${dHue}deg, ΔE00 ${dE}; same-seed identical ${sameSeedIdentical})`);
+  log(`   diagram/status family: ${gatedCount} gated (brand>=${args.de00Threshold}, jnd>=${JND_DELTA_E00}; min ΔE00 ${familyMinGated}), ${reportedCount} reported-only; same-seed identical ${familySameSeedIdentical}`);
+  for (const r of familyRows) {
+    const mark = r.floor == null ? "info " : r.pass ? "PASS " : "FAIL ";
+    log(`   - ${mark} [${r.tier}] ${r.token} ${r.a}/${r.b} ΔE00 ${r.deltaE00 == null ? r.reason : r.deltaE00}${r.floor == null ? "" : ` (>=${r.floor})`}${r.identical ? "  IDENTICAL" : ""}`);
+  }
 }
 
 // ---- run all ---------------------------------------------------------------

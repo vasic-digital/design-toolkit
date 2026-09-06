@@ -139,20 +139,159 @@ mutate "M6 check-tokens: golden-BAD + no browser -> FAIL outranks UNDETERMINED" 
 mutate "M7 check-tokens: browser unavailable     -> UNDETERMINED"              2 \
   node "$CHECK_TOKENS" --candidate "$CANDIDATE" --brand "$CANDIDATE" --skip-browser
 
+# Is a browser actually usable? Playwright RESOLVING is not the same as chromium
+# LAUNCHING, and this probe used to test only the former. MEASURED on this host:
+# @playwright/test resolved fine while every chromium launch died with
+# `<process did exit: exitCode=null, signal=SIGTRAP>` under memory pressure
+# (load average 74, swap 100% full). check-tokens correctly reported that as
+# T2=ERROR -> rc 2, but the resolve-only probe still drove the rc-0 rows and
+# scored them FAIL — this proof accusing a gate that was working, for an
+# environment fault. So the probe LAUNCHES a browser and closes it, and its
+# failure is this proof's own UNDETERMINED row. A 2 is never a pass, here either.
+browser_available() {
+  node -e '
+    const { createRequire } = require("node:module");
+    const r = createRequire(process.argv[1] + "/_tests/package.json");
+    let chromium;
+    try { ({ chromium } = r("@playwright/test")); } catch (e) { process.exit(1); }
+    chromium.launch()
+      .then((b) => b.close())
+      .then(() => process.exit(0))
+      .catch(() => process.exit(1));
+  ' "$(cd "$ROOT/.." && pwd)" >/dev/null 2>&1
+}
+
 # M8 POSITIVE CONTROL: the same invocation with the browser available returns 0.
 # Playwright/chromium is an environment fact, so its absence is reported as this
 # proof's own undetermined row rather than counted as a failure of the gate.
-if node -e '
-  const { createRequire } = require("node:module");
-  const r = createRequire(process.argv[1] + "/_tests/package.json");
-  r.resolve("@playwright/test");
-' "$(cd "$ROOT/.." && pwd)" >/dev/null 2>&1; then
+if browser_available; then
   mutate "M8 check-tokens: unmutated              -> PASS"                     0 \
     node "$CHECK_TOKENS" --candidate "$CANDIDATE" --brand "$CANDIDATE"
 else
-  echo "UNDET M8 check-tokens: unmutated -> PASS — Playwright/chromium not resolvable;" >&2
+  echo "UNDET M8 check-tokens: unmutated -> PASS — no chromium could be launched;" >&2
   echo "      the rc-0 control for this gate was NOT driven. Not a pass." >&2
   UNDET=$((UNDET + 1))
+fi
+
+# =============================================================================
+# The diagram/status family (--od-diagram-*, --od-status-fg-*) is DERIVED from
+# the design-DNA by generators/dtcg-to-od.mjs. These rows prove the gate ACTUALLY
+# ASSERTS that derivation instead of merely carrying it.
+#
+# Why an rc alone is not enough here, and why these rows check WHICH challenge
+# failed. M6 already drives check-tokens to exit 1; a row that only watched the
+# exit code would be satisfied by that same 1 arriving for any unrelated reason,
+# and would keep passing if the diagram assertions were deleted tomorrow. So each
+# row below names the exact set of FAILing challenges it expects.
+#
+# EVERY MUTATION IS DATA, as everywhere else in this file: two derived candidate
+# files, produced from the real candidate by a Node one-liner. Neither the gate
+# nor the generator is edited.
+# =============================================================================
+echo
+echo "--- diagram/status family derivation (check-tokens T1 + T4) ---"
+
+# The brand CSS these rows compare against lives in the CONSUMING umbrella, not
+# in this module. A standalone clone does not have it, and inventing a stand-in
+# would prove something about the stand-in rather than about the contract.
+BRAND_CSS="$(cd "$ROOT/.." 2>/dev/null && pwd)/design-system/brand-vasic-digital/vasic-digital.css"
+
+# One mutation whose expected outcome names WHICH challenges must FAIL, not just
+# the exit code. `expected_failing` is the comma-joined sorted failingChallenges
+# array from the gate's own JSON verdict; "" means none.
+mutate_failing() {
+  local name="$1" expected_rc="$2" expected_failing="$3"; shift 3
+  local rc actual
+  "$@" >"$TMP/out" 2>"$TMP/err"
+  rc=$?
+  actual="$(node -e '
+    const fs = require("node:fs");
+    try {
+      const v = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+      process.stdout.write((v.failingChallenges || []).slice().sort().join(","));
+    } catch (e) { process.stdout.write("<unparseable verdict>"); }
+  ' "$TMP/out")"
+  if [[ "$rc" -eq "$expected_rc" && "$actual" == "$expected_failing" ]]; then
+    echo "PASS $name — exit $rc, failing=[$actual]"
+    PASS=$((PASS + 1))
+  else
+    echo "FAIL $name — exit $rc (expected $expected_rc), failing=[$actual] (expected [$expected_failing])" >&2
+    sed -n '1,6p' "$TMP/err" | sed 's/^/       /' >&2
+    FAIL=$((FAIL + 1))
+  fi
+}
+
+if [[ ! -f "$BRAND_CSS" ]]; then
+  echo "UNDET M15/M16/M17 — the umbrella brand CSS is not present at" >&2
+  echo "      $BRAND_CSS" >&2
+  echo "      so the coverage contract these rows assert cannot be driven at all." >&2
+  echo "      This module is standalone-consumable; that is a fact about this" >&2
+  echo "      checkout, not a failure of the gate. Not a pass." >&2
+  UNDET=$((UNDET + 3))
+else
+  # The mutated candidates keep the `<brand>.od-tokens.css` basename so that
+  # check-tokens' own brand inference resolves the SAME live brand file the
+  # unmutated row uses — the mutation must be the only difference.
+  mkdir -p "$TMP/nodiagram" "$TMP/badink"
+
+  # M15 CONFIRMED FINDING: the nine --od-diagram-* declarations are deleted. T1
+  # must report them missing against the live brand, and T4 must lose the pairs
+  # it measures them with. If dtcg-to-od.mjs ever stops emitting the family, this
+  # is the shape of the failure the gate has to produce.
+  if node -e '
+    const fs = require("node:fs");
+    const src = fs.readFileSync(process.argv[1], "utf8");
+    const out = src.replace(/^[ \t]*--od-diagram-[a-z0-9-]+[ \t]*:[^;]*;[ \t]*\r?\n/gm, "");
+    if (out === src) process.exit(3);                       // nothing removed: would not bite
+    const active = out.replace(/\/\*[\s\S]*?\*\//g, "");
+    if (/--od-diagram-[a-z0-9-]+[ \t]*:/.test(active)) process.exit(4);  // incomplete removal
+    fs.writeFileSync(process.argv[2], out);
+  ' "$CANDIDATE" "$TMP/nodiagram/vasic-digital.od-tokens.css" 2>/dev/null; then
+    mutate_failing "M15 check-tokens: diagram family REMOVED  -> T1+T4 FAIL" 1 \
+      "T1-coverage,T4-contrast-wcag21" \
+      node "$CHECK_TOKENS" --candidate "$TMP/nodiagram/vasic-digital.od-tokens.css" --skip-browser
+  else
+    echo "UNDET M15 — could not derive the diagram-free candidate from $CANDIDATE." >&2
+    UNDET=$((UNDET + 1))
+  fi
+
+  # M16 CONFIRMED FINDING: every name is still PRESENT, so T1 is satisfied — only
+  # the light-theme --od-diagram-ink VALUE is corrupted, to the plate colour it is
+  # supposed to be legible against (contrast 1:1). This is the row that separates
+  # "the tokens exist" from "the derivation is sound": a generator that emitted
+  # the family at arbitrary values would pass T1 and must not pass T4.
+  if node -e '
+    const fs = require("node:fs");
+    const src = fs.readFileSync(process.argv[1], "utf8");
+    const panel = (src.match(/--od-diagram-panel:\s*(#[0-9a-fA-F]{6})/) || [])[1];
+    if (!panel) process.exit(3);
+    let hit = false;
+    const out = src.replace(/--od-diagram-ink:\s*#[0-9a-fA-F]{6}/, () => { hit = true; return "--od-diagram-ink: " + panel; });
+    if (!hit) process.exit(4);
+    fs.writeFileSync(process.argv[2], out);
+  ' "$CANDIDATE" "$TMP/badink/vasic-digital.od-tokens.css" 2>/dev/null; then
+    mutate_failing "M16 check-tokens: diagram ink == its plate -> T4 FAIL only" 1 \
+      "T4-contrast-wcag21" \
+      node "$CHECK_TOKENS" --candidate "$TMP/badink/vasic-digital.od-tokens.css" --skip-browser
+  else
+    echo "UNDET M16 — could not derive the corrupted-ink candidate from $CANDIDATE." >&2
+    UNDET=$((UNDET + 1))
+  fi
+
+  # M17 POSITIVE CONTROL: the SAME invocation against the SAME live brand CSS,
+  # unmutated, must exit 0 with nothing failing. M8 already drives an rc-0, but it
+  # compares the candidate against ITSELF, so coverage there is a self-comparison
+  # that cannot see the diagram family at all. Without this row, M15 and M16 would
+  # be equally satisfied by a gate that fails against the real brand no matter what.
+  if browser_available; then
+    mutate_failing "M17 check-tokens: unmutated vs LIVE brand   -> PASS"        0 "" \
+      node "$CHECK_TOKENS" --candidate "$CANDIDATE"
+  else
+    echo "UNDET M17 check-tokens: unmutated vs LIVE brand -> PASS — no chromium could" >&2
+    echo "      be launched; the rc-0 control for the real coverage contract was NOT" >&2
+    echo "      driven. Not a pass." >&2
+    UNDET=$((UNDET + 1))
+  fi
 fi
 
 # =============================================================================
