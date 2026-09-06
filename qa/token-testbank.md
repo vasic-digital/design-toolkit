@@ -62,8 +62,31 @@ CSS-level accent primary, not the in-memory DTCG.
 Overall verdict = PASS only if **all** Challenges PASS (§11.4.134 — loop to the
 responsible specialist on any FAIL; never relax the assertion).
 
-**Baseline (measured now):** both real candidates → **5/5 PASS (exit 0)**; golden-bad
-fixture → **T1/T2/T4 FAIL, T3/T5 PASS (exit 1)**.
+**Baseline — the "both real candidates → 5/5 PASS (exit 0)" claim that stood here is
+WITHDRAWN as FALSE, superseded by measurement 2026-09-06.** Re-measured on this
+tree, both real candidates **FAIL T1 with exit 1**:
+
+```
+node qa/check-tokens.mjs --candidate proposed/vasic-digital.od-tokens.css   # exit 1
+node qa/check-tokens.mjs --candidate proposed/milosvasic.od-tokens.css      # exit 1
+T1 coverage: FAIL (brand defines 86, candidate defines 75; 11 missing)
+```
+
+The 11 are `--od-diagram-{good,good-ink,good-line,ink,line,muted,panel,panel2,tint}`
+and `--od-status-fg-{dark,light}`. **The gate is right and the candidate is stale**:
+the brand CSS this challenge derives its expectation from lives in the CONSUMING
+umbrella (`design-system/brand-*/`), which grew those tokens after these candidates
+were generated. `dtcg-to-od.mjs` emits no diagram/status family at all, so
+regenerating alone does not close it — that is a generator change, and it is NOT
+made here. T2–T5 still PASS on both candidates.
+
+Golden-bad fixture → **T4 FAIL (exit 1)** when run with `--brand` pointed at itself,
+which is how `qa/prove-three-valued-exits.sh` (M6) drives it. The historical
+"T1/T2/T4 FAIL" figure is for the run against the real brand CSS.
+
+**Do not read any exit code off this page — run the command.** This paragraph is a
+dated observation, and its predecessor was quoted as current long after it stopped
+being true.
 
 ---
 
@@ -258,7 +281,26 @@ generator, which the static fixture does not exercise.
 
 ## Status
 
-Executable now — all five Challenges are RUN checks in `check-tokens.mjs`. Real
-candidates in `design-toolkit/proposed/` pass **5/5 (exit 0)**; the golden-bad fixture
-fails **T1/T2/T4 (exit 1)**. Any future FAIL on a real candidate is a genuine defect —
-fix the generator/candidate and re-green; **never weaken an assertion here.**
+Executable now — all five Challenges are RUN checks in `check-tokens.mjs`.
+
+**The "real candidates pass 5/5 (exit 0)" line that stood here is WITHDRAWN as
+FALSE** — see the Baseline section above for the measurement that replaced it. Both
+real candidates FAIL T1 today (11 `--od-*` tokens the brand CSS defines and the
+candidate does not), and that is an OPEN, unfixed finding, not a gate to relax. The
+golden-bad fixture fails T4 (exit 1) under the invocation the proof drives.
+
+**Exit codes are THREE-VALUED as of 2026-09-06** — 0 PASS, 1 a real FAIL, **2 COULD
+NOT DETERMINE**, and a 2 is never a pass. A challenge that reports `ERROR` (Playwright
+not importable, chromium refused to launch, `--skip-browser`, generator pipeline not
+invocable) now yields **2**, not 1: it used to be indistinguishable from a broken
+candidate. Precedence is CONFIRMED over UNDETERMINED — any FAIL makes the exit 1 even
+alongside an ERROR, so a broken environment cannot mask a finding.
+
+The §1.1 paired proof is `qa/prove-three-valued-exits.sh` — 12 DATA-only mutations
+(arguments, input files, the shipped golden-bad fixture, scratch git repositories, a
+dependency-free copy of the working tree; **no edit to any gate's source**) driving
+all three exit codes of all three gates. Verified in both directions: 12/12 on this
+tree, and 4 FAIL when pointed at the pre-fix gates restored from `git show HEAD:`.
+
+Any future FAIL on a real candidate is a genuine defect — fix the generator/candidate
+and re-green; **never weaken an assertion here.**

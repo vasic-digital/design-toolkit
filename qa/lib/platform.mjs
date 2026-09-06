@@ -51,6 +51,21 @@ function contrastCheck(doc, c) {
   const fails = rows.filter((r) => !r.pass);
   const textRows = rows.filter((r) => r.kind === "text");
   const uiRows = rows.filter((r) => r.kind === "ui");
+  // POSITIVE CONTROL on the subject set: `fails.length === 0` over ZERO rows is
+  // vacuously true. A token document carrying no resolvable semantic colour pair
+  // would otherwise be certified as clearing every platform's contrast floor,
+  // which is a PASS whose evidence is the absence of evidence. Nothing measured
+  // is UNDETERMINED, never a pass. Paired proof:
+  // qa/prove-three-valued-exits.sh (M14).
+  if (rows.length === 0) {
+    return {
+      metric: "contrast", status: "SKIP", op: ">=", tag: c.tag, source: c.source,
+      floor: { text: c.text, large: c.large, ui: c.ui, unit: c.unit },
+      reason: "the token document resolves ZERO semantic colour pairs — nothing to measure against this floor; a contrast verdict over an empty pair set would be vacuous",
+      measured: { pairsChecked: 0, minText: null, minUi: null, fails: [] },
+      undetermined: true,
+    };
+  }
   return {
     metric: "contrast",
     status: fails.length === 0 ? "PASS" : "FAIL",
@@ -137,10 +152,18 @@ export function checkPlatformConformance(doc, platform) {
   }
 
   const asserted = checks.filter((c) => c.status === "PASS" || c.status === "FAIL");
-  const gating = asserted.length > 0;
+  // A floor that COULD NOT BE MEASURED is not the same thing as a floor that does
+  // not exist. Both used to arrive here as `status: "SKIP"`, and the second is
+  // legitimately advisory — but collapsing the first into it would launder an
+  // unmeasurable input into "no gateable [E] floor derivable", i.e. into silence.
+  // `undetermined` marks the gateable-but-unmeasurable ones, and they keep
+  // `gating: true` so the runner cannot drop them from its verdict.
+  const undet = checks.filter((c) => c.undetermined === true);
+  const gating = asserted.length > 0 || undet.length > 0;
   const verdict = asserted.some((c) => c.status === "FAIL")
-    ? "FAIL"
-    : gating ? "PASS" : "SKIP";
+    ? "FAIL"                       // CONFIRMED outranks UNDETERMINED
+    : undet.length > 0 ? "UNDETERMINED"
+    : asserted.length > 0 ? "PASS" : "SKIP";
 
-  return { platform, label: spec.label, known: true, gating, verdict, checks };
+  return { platform, label: spec.label, known: true, gating, verdict, checks, undetermined: undet.length > 0 };
 }

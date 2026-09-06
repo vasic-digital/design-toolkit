@@ -38,8 +38,15 @@
 // --brand is inferred from the candidate basename when it maps to a known brand.
 // The seed/adjectives for T3/T5 are parsed from the candidate header comment when
 // present; otherwise the default seed pair (vasic-digital, milosvasic) is used.
-// Exit code 0 = all checks PASS; non-zero = at least one FAIL/ERROR. JSON verdict
-// -> stdout; human summary -> stderr.
+// THREE-VALUED EXIT (§11.4.6 — a 2 is NEVER a pass):
+//   0 = every challenge PASSed
+//   1 = at least one challenge FAILed — a real finding about the candidate
+//   2 = COULD NOT DETERMINE — a challenge could not run at all (Playwright not
+//       importable, chromium refused to launch, --skip-browser, generator
+//       pipeline not invocable). Nothing was measured; this is not a pass.
+// Precedence: FAIL (1) outranks UNDETERMINED (2) outranks PASS (0), so a broken
+// environment can never mask a real finding. JSON verdict -> stdout; human
+// summary -> stderr.
 // =============================================================================
 
 import { readFileSync, existsSync } from "node:fs";
@@ -192,6 +199,23 @@ function runT1() {
   const brandCss = readFileSync(brandPath, "utf8");
   const brand = definedTokens(brandCss);
   const cand = definedTokens(candidateCss);
+  // POSITIVE CONTROL on the subject set. T1 asserts an ABSENCE — "no brand token
+  // is missing from the candidate" — and an absence-assertion over an EMPTY
+  // subject set is vacuously true. Measured before this guard existed: an empty
+  // brand file produced `T1 coverage: PASS (brand defines 0, candidate defines
+  // 75; 0 missing)`, a PASS carrying evidence that supports no claim about
+  // coverage at all. A brand CSS that defines zero `--od-*` tokens is an unusable
+  // reference, not a satisfied contract, so it is UNDETERMINED. Paired proof:
+  // qa/prove-three-valued-exits.sh (M13).
+  if (brand.size === 0) {
+    push({
+      challenge: "T1-coverage", verdict: "ERROR",
+      rationale: `brand CSS ${basename(brandPath)} defines ZERO --od-* tokens — there is nothing to compare the candidate against, so "0 missing" would be a vacuous pass`,
+      measurements: { brand: basename(brandPath), brandDefined: 0, candidateDefined: cand.size },
+    });
+    log(`T1 coverage: ERROR (brand ${basename(brandPath)} defines 0 --od-* tokens — empty reference set, not a pass)`);
+    return;
+  }
   const missing = [...brand].filter((t) => !cand.has(t)).sort();
   const extra = [...cand].filter((t) => !brand.has(t)).sort();
   const pass = missing.length === 0;
@@ -447,16 +471,33 @@ runT3();
 runT4();
 runT5();
 
-const failing = dimensions.filter((d) => d.verdict !== "PASS");
-const overall = failing.length === 0 ? "PASS" : "FAIL";
+// THREE-VALUED VERDICT. Each challenge already reports FAIL (a real finding
+// about the candidate) separately from ERROR (the challenge could not run —
+// Playwright not importable, chromium refused to launch, --skip-browser, the
+// generator pipeline failed to invoke). Those two states used to collapse into
+// the same exit code 1, so a caller could not tell "this candidate is broken"
+// from "this machine cannot answer the question" — and the second was being
+// reported as the first. Precedence is CONFIRMED over UNDETERMINED: any FAIL
+// makes the exit 1 even alongside an ERROR, so a broken environment can never
+// mask a real finding. Paired proof: qa/prove-three-valued-exits.sh (M5/M6/M7).
+const failing = dimensions.filter((d) => d.verdict === "FAIL");
+const errored = dimensions.filter((d) => d.verdict !== "PASS" && d.verdict !== "FAIL");
+const overall = failing.length ? "FAIL" : errored.length ? "UNDETERMINED" : "PASS";
+const exitCode = failing.length ? 1 : errored.length ? 2 : 0;
 const verdict = {
   feature_class: "design_token_candidate_qa",
   candidate: args.candidate,
   brand: brandPath ? basename(brandPath) : undefined,
   overall,
+  exitCode,
   failingChallenges: failing.map((d) => d.challenge),
+  undeterminedChallenges: errored.map((d) => d.challenge),
   challenges: dimensions,
 };
 process.stdout.write(JSON.stringify(verdict, null, 2) + "\n");
-log(`\nOVERALL: ${overall}${failing.length ? ` (failing: ${failing.map((d) => `${d.challenge}=${d.verdict}`).join(", ")})` : ""}`);
-process.exit(overall === "PASS" ? 0 : 1);
+const parts = [...failing, ...errored].map((d) => `${d.challenge}=${d.verdict}`);
+log(`\nOVERALL: ${overall} (exit ${exitCode})${parts.length ? ` (${parts.join(", ")})` : ""}`);
+if (overall === "UNDETERMINED") {
+  log("  COULD NOT DETERMINE — this is NOT a pass and NOT a finding about the candidate.");
+}
+process.exit(exitCode);

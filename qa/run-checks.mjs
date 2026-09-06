@@ -41,24 +41,66 @@
 //        --hue-threshold 15 --de00-threshold 10 --cam16-threshold 8
 //
 // If --tokens is omitted, a set is generated in-memory from the first seed.
-// Exit code 0 = all GATING checks PASS; non-zero = at least one gating FAIL.
-// (A1b APCA is advisory and never changes the exit code.) Machine-readable JSON
-// verdict goes to stdout; human summary to stderr.
+// THREE-VALUED EXIT (§11.4.6 — a 2 is NEVER a pass):
+//   0 = every GATING check PASSed. (A1b APCA is advisory and never changes it.)
+//   1 = at least one gating check FAILed — a real finding about the tokens.
+//   2 = COULD NOT DETERMINE — the runner could not measure anything, because its
+//       toolchain or its input is absent, not because the tokens are wrong.
+//       Sources of 2 today: the pinned color-science dependencies are not
+//       installed (`npm install` never run in generators/); `--tokens` names a
+//       file that cannot be read or parsed; or the document under test resolves
+//       ZERO semantic colour pairs, so D2 and the C-PLAT contrast floors have an
+//       EMPTY subject set and any verdict over it would be vacuous.
+// Precedence: a CONFIRMED failure outranks an undetermined one — if any gating
+// check FAILs, the exit is 1 even when something else was undeterminable, so a
+// broken environment can never mask a real finding.
+// Machine-readable JSON verdict goes to stdout; human summary to stderr.
+//
+// Why the imports below are DYNAMIC. Static ESM imports are resolved before any
+// line of this module runs, so a missing dependency aborts the process with an
+// uncaught ERR_MODULE_NOT_FOUND and Node's own exit code 1 — i.e. this runner
+// used to report "your tokens FAIL" when the truth was "npm install was never
+// run". The dynamic block is the only way to give an absent toolchain its own
+// verdict. Paired proof: qa/prove-three-valued-exits.sh (mutation M1).
 
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { validateDtcg, extractSchemes } from "../generators/lib/dtcg.mjs";
-import { evaluateScheme, SEMANTIC_PAIRS } from "../generators/lib/color.mjs";
-import { oklchHue, hueDelta } from "../generators/lib/color.mjs";
-import { generateTokens } from "../generators/lib/tokens.mjs";
-import { generateMark } from "../generators/lib/marks.mjs";
-import { deltaE00, deltaEOK } from "./lib/deltae.mjs";
-import { deltaEPrimeCam16, deltaECam16 } from "./lib/cam16.mjs";
-import { apcaLc } from "./lib/apca.mjs";
-import { deriveVector } from "../generators/lib/tokens.mjs";
-import { typePairDistance } from "./lib/typedna.mjs";
-import { axisSubDistances, dnaDistance, DNA_WEIGHTS, COLOR_ANCHOR, poissonCapacityReport } from "./lib/dnadist.mjs";
-import { checkPlatformConformance } from "./lib/platform.mjs";
+
+/** Exit with an explicit COULD-NOT-DETERMINE verdict on stderr + stdout. */
+function undetermined(reason, hint) {
+  const v = { feature_class: "design_qa", overall: "UNDETERMINED", reason, hint };
+  process.stdout.write(JSON.stringify(v, null, 2) + "\n");
+  process.stderr.write(`\nCOULD NOT DETERMINE: ${reason}\n`);
+  if (hint) process.stderr.write(`  ${hint}\n`);
+  process.stderr.write("  This is NOT a pass and NOT a finding about the tokens.\n");
+  process.exit(2);
+}
+
+let validateDtcg, extractSchemes, evaluateScheme, SEMANTIC_PAIRS, oklchHue, hueDelta,
+    generateTokens, deriveVector, generateMark, deltaE00, deltaEOK,
+    deltaEPrimeCam16, deltaECam16, apcaLc, typePairDistance,
+    axisSubDistances, dnaDistance, DNA_WEIGHTS, COLOR_ANCHOR, poissonCapacityReport,
+    checkPlatformConformance;
+try {
+  ({ validateDtcg, extractSchemes } = await import("../generators/lib/dtcg.mjs"));
+  ({ evaluateScheme, SEMANTIC_PAIRS, oklchHue, hueDelta } = await import("../generators/lib/color.mjs"));
+  ({ generateTokens, deriveVector } = await import("../generators/lib/tokens.mjs"));
+  ({ generateMark } = await import("../generators/lib/marks.mjs"));
+  ({ deltaE00, deltaEOK } = await import("./lib/deltae.mjs"));
+  ({ deltaEPrimeCam16, deltaECam16 } = await import("./lib/cam16.mjs"));
+  ({ apcaLc } = await import("./lib/apca.mjs"));
+  ({ typePairDistance } = await import("./lib/typedna.mjs"));
+  ({ axisSubDistances, dnaDistance, DNA_WEIGHTS, COLOR_ANCHOR, poissonCapacityReport } = await import("./lib/dnadist.mjs"));
+  ({ checkPlatformConformance } = await import("./lib/platform.mjs"));
+} catch (e) {
+  if (e && e.code === "ERR_MODULE_NOT_FOUND") {
+    undetermined(
+      `a pinned dependency of the metric libraries is not installed (${e.message.split("\n")[0]})`,
+      "run: npm --prefix design-toolkit/generators install"
+    );
+  }
+  throw e;
+}
 
 function parseArgs(argv) {
   const args = {
@@ -98,7 +140,22 @@ const log = (s) => process.stderr.write(s + "\n");
 let doc;
 let source;
 if (args.tokens) {
-  doc = JSON.parse(readFileSync(args.tokens, "utf8"));
+  // An unreadable or unparseable --tokens file is an INPUT fault, not a verdict
+  // about any token set: there is nothing to measure. Paired proof: mutations
+  // M2 (absent file) and M3 (malformed JSON) in qa/prove-three-valued-exits.sh.
+  let raw;
+  try {
+    raw = readFileSync(args.tokens, "utf8");
+  } catch (e) {
+    undetermined(`--tokens '${args.tokens}' could not be read (${e.code || e.message})`,
+                 "check the path; nothing was measured");
+  }
+  try {
+    doc = JSON.parse(raw);
+  } catch (e) {
+    undetermined(`--tokens '${args.tokens}' is not parseable JSON (${e.message})`,
+                 "a malformed input file is an undetermined run, not a failing token set");
+  }
   source = args.tokens;
 } else {
   doc = generateTokens(args.seeds[0]).document;
@@ -130,16 +187,32 @@ const contrastRows = [
 const contrastFails = contrastRows.filter((r) => !r.pass);
 const minText = Math.min(...contrastRows.filter((r) => r.kind === "text").map((r) => r.ratio));
 const minAll = Math.min(...contrastRows.map((r) => r.ratio));
+// POSITIVE CONTROL on the subject set. `contrastFails.length === 0` over ZERO
+// rows is vacuously true, and this gate used to report exactly that: measured on
+// a structurally valid token document with its `color` group removed, D2 printed
+// `PASS (0 pairs; min text Infinity:1)` and the whole run exited 0 — a token set
+// with no colours at all certified as WCAG-clean. Nothing measured is
+// UNDETERMINED, never a pass. Paired proof: qa/prove-three-valued-exits.sh (M14).
+const d2Undetermined = contrastRows.length === 0;
+const d2Verdict = d2Undetermined ? "UNDETERMINED" : contrastFails.length === 0 ? "PASS" : "FAIL";
 dimensions.push({
   dimension: "D2-contrast",
-  verdict: contrastFails.length === 0 ? "PASS" : "FAIL",
-  rationale: contrastFails.length === 0
-    ? `all ${contrastRows.length} semantic pairs clear their WCAG threshold in both modes`
-    : `${contrastFails.length} pair(s) below threshold`,
-  measurements: { pairsChecked: contrastRows.length, minTextRatio: minText, minAnyRatio: minAll },
+  verdict: d2Verdict,
+  rationale: d2Undetermined
+    ? "the token document resolves ZERO semantic colour pairs — there is nothing to measure, so a contrast verdict would be vacuous"
+    : contrastFails.length === 0
+      ? `all ${contrastRows.length} semantic pairs clear their WCAG threshold in both modes`
+      : `${contrastFails.length} pair(s) below threshold`,
+  measurements: {
+    pairsChecked: contrastRows.length,
+    minTextRatio: d2Undetermined ? null : minText,
+    minAnyRatio: d2Undetermined ? null : minAll,
+  },
   failures: contrastFails.map((r) => ({ mode: r.mode, pair: `${r.fg}/${r.bg}`, ratio: r.ratio, threshold: r.threshold })),
 });
-log(`D2 contrast: ${contrastFails.length === 0 ? "PASS" : "FAIL"} ` +
+log(d2Undetermined
+  ? "D2 contrast: UNDETERMINED (0 semantic colour pairs resolved from this document — nothing measured, NOT a pass)"
+  : `D2 contrast: ${contrastFails.length === 0 ? "PASS" : "FAIL"} ` +
     `(${contrastRows.length} pairs; min text ${minText}:1, min any ${minAll}:1)`);
 for (const r of contrastFails) log(`   - FAIL ${r.mode} ${r.fg}/${r.bg} = ${r.ratio}:1 < ${r.threshold}:1`);
 
@@ -506,7 +579,9 @@ for (const platform of args.platforms) {
     rationale: r.gating
       ? (r.verdict === "PASS"
           ? `${r.label}: ${asserted.length} gateable [E] floor(s) satisfied (${asserted.map((c) => c.metric).join(", ")}); ${skipped.length} non-token/UNVERIFIED/secondhand floor(s) SKIPPED with reason`
-          : `${r.label}: ${asserted.filter((c) => c.status === "FAIL").length} gateable [E] floor(s) BREACHED (${asserted.filter((c) => c.status === "FAIL").map((c) => c.metric).join(", ")})`)
+          : r.verdict === "UNDETERMINED"
+            ? `${r.label}: a gateable [E] floor COULD NOT BE MEASURED from this token document (${r.checks.filter((c) => c.undetermined).map((c) => c.metric).join(", ")}) — not a breach and NOT a pass`
+            : `${r.label}: ${asserted.filter((c) => c.status === "FAIL").length} gateable [E] floor(s) BREACHED (${asserted.filter((c) => c.status === "FAIL").map((c) => c.metric).join(", ")})`)
       : `${r.label}: no assertable [E] floor derivable from the emitted token set today — all ${skipped.length} documented floor(s) SKIPPED with reason (advisory, never gates)`,
     measurements: { platform, label: r.label, gating: r.gating, checks: r.checks },
     tags: ["[E]-web-android-gated", "[E]-secondhand/[UNVERIFIED]-skipped"],
@@ -533,14 +608,24 @@ for (const platform of args.platforms) {
 }
 
 // --- Overall verdict (advisory checks excluded from the gate) ----------------
+// THREE-VALUED, with CONFIRMED outranking UNDETERMINED: any gating FAIL exits 1
+// even when another dimension was unmeasurable, so a degraded input can never
+// mask a real finding; an unmeasurable dimension with no FAIL beside it exits 2,
+// never 0.
 const gatingDims = dimensions.filter((d) => !d.advisory);
-const overall = gatingDims.every((d) => d.verdict === "PASS") ? "PASS" : "FAIL";
+const gatingFails = gatingDims.filter((d) => d.verdict === "FAIL");
+const gatingUndet = gatingDims.filter((d) => d.verdict === "UNDETERMINED");
+const overall = gatingFails.length ? "FAIL" : gatingUndet.length ? "UNDETERMINED" : "PASS";
+const exitCode = gatingFails.length ? 1 : gatingUndet.length ? 2 : 0;
 const verdict = {
   feature_class: "design_qa",
   target: source,
   generatedAt_omitted_for_determinism: true,
   overall,
+  exitCode,
   gatingDimensions: gatingDims.map((d) => d.dimension),
+  failingDimensions: gatingFails.map((d) => d.dimension),
+  undeterminedDimensions: gatingUndet.map((d) => d.dimension),
   advisoryDimensions: dimensions.filter((d) => d.advisory).map((d) => d.dimension),
   dimensions,
 };
@@ -548,5 +633,8 @@ process.stdout.write(JSON.stringify(verdict, null, 2) + "\n");
 const advisoryNote = dimensions.some((d) => d.advisory)
   ? ` (advisory, not gated: ${dimensions.filter((d) => d.advisory).map((d) => `${d.dimension}=${d.verdict}`).join(", ")})`
   : "";
-log(`\nOVERALL: ${overall}${advisoryNote}`);
-process.exit(overall === "PASS" ? 0 : 1);
+log(`\nOVERALL: ${overall} (exit ${exitCode})${advisoryNote}`);
+if (overall === "UNDETERMINED") {
+  log(`  COULD NOT DETERMINE: ${gatingUndet.map((d) => d.dimension).join(", ")} — nothing was measured. NOT a pass.`);
+}
+process.exit(exitCode);
