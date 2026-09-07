@@ -15,7 +15,7 @@
 // =============================================================================
 
 import { readFileSync, writeFileSync } from "node:fs";
-import { TonalPalette, argbFromHex, hexFromArgb, Blend } from "@material/material-color-utilities";
+import { TonalPalette, Hct, argbFromHex, hexFromArgb, Blend } from "@material/material-color-utilities";
 
 // ---- CLI -------------------------------------------------------------------
 function parseArgs(argv) {
@@ -160,16 +160,202 @@ const SUCCESS_FILL_TONES = { success: 40, badge: 36 };
 // any tone is taken from it.
 const SUCCESS_HUE_ANCHOR = "#2e7d32";
 
-/** Build the three derived palettes from a DTCG light scheme. Pure. */
-function derivedPalettes(lightScheme) {
+// =============================================================================
+// THE COUNTERPOINT PALETTE — the fix for a palette that was measurably monotone.
+//
+// THE MEASUREMENT THAT MOTIVATED IT, taken before the change with
+// qa/check-chromatic-range.mjs --report on the two shipped candidates:
+//
+//   vasic-digital  light: 3/12 hue bins [0-30 30-60 120-150], span 120deg
+//   milosvasic     light: 3/12 hue bins [0-30 30-60 120-150], span 120deg
+//
+// The two brands occupied the IDENTICAL three bins, in both themes. That is not
+// a coincidence and it is the whole diagnosis: every chromatic token this file
+// emitted came from exactly three sources — the M3 primary, the semantic success
+// green, and a FROZEN amber literal. The seed moved the accent's hue; it moved
+// nothing else. A generator whose premise is "different seeds, measurably
+// different brands" was shipping every brand the same three-family structure.
+//
+// WHAT THIS ADDS. A second chromatic family, derived — like everything else here
+// — from the DTCG document, and placed by an axis the design-DNA ALREADY carried
+// and this file ALREADY printed into its own header but never used for anything:
+// `vector.harmonyRule`. Measured before the change: `grep -rn harmonyRule` over
+// the generators found it derived in tokens.mjs, echoed into two strings, and
+// consumed by NO derivation. A free axis was being spent on a comment.
+//
+// THE ROTATION TABLE, and the honest part. The classical colour-wheel angles for
+// two of these rules are 0deg (mono) and ~30deg (analogous). Both were tried and
+// both were REJECTED BY MEASUREMENT, not by taste: at those angles the
+// counterpoint lands inside the accent's own 30deg hue bin, so the emitted
+// palette still measured 3 bins and a 120deg span — i.e. the change would have
+// added a token and fixed nothing. Both shipped seeds resolve to `mono`, so the
+// classical table would have left the two live candidates exactly as monotone as
+// they started.
+//
+// So the axis is REPURPOSED, and the cost is stated rather than hidden: these
+// five names no longer denote their literal colour-wheel angles. What they still
+// do is select five DISTINCT positions on the far arc (120..180deg), which keeps
+// harmonyRule a real five-way DNA axis separating seeds. A rule meaning "no
+// second hue at all" is precisely the state this module is leaving, so no member
+// of the table is below 120deg.
+const HARMONY_ROTATION = {
+  triadic: 120,
+  analogous: 135,
+  "split-complementary": 150,
+  mono: 165,
+  complementary: 180,
+};
+const DEFAULT_ROTATION = 150; // an unrecognised rule still gets a real counterpoint
+
+// The semantic WARNING hue anchor. This replaces the frozen literals `#d97706`
+// (light) and `#f59e0b` (dark) that this file used to emit.
+//
+// WHY THE LITERAL HAD TO GO, beyond it being hand-painted in a module whose whole
+// premise is derivation: `#d97706` sits in the warm-clay/terracotta cluster that
+// is the single commonest signature of generated design. Emitting it from a
+// BRAND GENERATOR meant every project this toolkit ever produced would carry that
+// signature no matter what its seed asked for.
+//
+// It is harmonized toward the brand primary by the same <=15deg Blend.harmonize
+// mechanism the success family already uses, so a warm brand's amber is warmed
+// and a cool brand's cooled while amber stays amber.
+//
+// HONEST BOUNDARY (§11.4.6): for a seed whose accent is ITSELF amber this
+// harmonization pulls warning INTO the accent's hue bin rather than widening
+// anything — measured on `vasic-digital`, whose primary HCT hue is 62.7 against
+// the anchor's 58.0. That is the semantic constraint doing its job (a warning
+// must read as a warning), and it is exactly why the counterpoint above, not the
+// warning, is what carries the hue widening. Do not credit this token with the
+// bin count.
+const WARNING_HUE_ANCHOR = "#b45309";
+// Tones of the harmonized warning palette per theme. Chosen to sit at the
+// lightness the outgoing literals occupied (#d97706 ~ tone 60, #f59e0b ~ tone
+// 75) so the change is a re-derivation of an existing value and not a new
+// opinion about how bright a warning should be. Both are measured against the
+// theme-INVARIANT --od-status-fg-dark in T4, in both themes.
+const WARNING_TONES = { light: 60, dark: 75 };
+// Tones of the counterpoint palette. panel2 mirrors the scaffold tones it
+// replaces (94/28) so the only thing that changed is the HUE, which keeps the
+// T4 adjacencies comparable to their pre-change measurements. focus sits mid-ramp
+// where a ring must be visible against both a light and a dark surface.
+const COUNTER_TONES = { panel2Light: 94, panel2Dark: 28, focusLight: 50, focusDark: 70 };
+// FLOOR on the counterpoint's chroma, in HCT chroma units.
+//
+// MEASURED, not chosen. A 20-seed sweep of the first draft — which took the
+// counterpoint's chroma from the primary unconditionally — split into two
+// populations: 15 seeds reaching 4-7 hue bins over a 150-270deg span, and 5
+// (beta, gamma, epsilon, xi, rho) still stuck at 3 bins / 120deg. All five
+// resolve to the `Monochrome` MCU variant, whose primary is greyscale by
+// design. The counterpoint inherited that near-zero chroma, so the second hue
+// was derived, emitted, and INVISIBLE — the change would have been a no-op for
+// a quarter of the seed space, and for every seed carrying the `technical` or
+// `developer` adjective, which forces Monochrome outright.
+//
+// The floor is justified by FUNCTION rather than by the metric it happens to
+// move: --od-focus is one of the two consumers, and a focus ring at zero chroma
+// is a grey ring around a grey control — the worst available outcome for the one
+// token whose entire job is to be findable by a keyboard user. A monochrome
+// brand keeping a single restrained accent for secondary structure is also how
+// monochrome design systems are actually built; the greyscale ACCENT, which is
+// what carries that brand's identity, is untouched.
+const MIN_COUNTER_CHROMA = 24;
+
+// Smallest angular distance between two hues, degrees (0..180). Pure.
+function hueGap(a, b) {
+  const d = Math.abs(((a - b) % 360 + 360) % 360);
+  return d > 180 ? 360 - d : d;
+}
+// Below this HCT chroma the emitted primary carries no usable hue (see the
+// Monochrome finding in derivedPalettes).
+const PRIMARY_HUE_CHROMA_MIN = 5;
+// The counterpoint must stay at least this far (degrees) from EVERY semantic
+// hue. See the placement search in derivedPalettes for why one flat clearance
+// against a set of hues beats a per-collision patch.
+const SEMANTIC_CLEARANCE = 30;
+
+/** Build the derived palettes from a DTCG light scheme + DNA vector. Pure. */
+function derivedPalettes(lightScheme, vector) {
   const hexOf = (name) => val(lightScheme[name]);
+  const primaryArgb = argbFromHex(hexOf("primary"));
+  const primaryHct = Hct.fromInt(primaryArgb);
+  const goodArgb = Blend.harmonize(argbFromHex(SUCCESS_HUE_ANCHOR), primaryArgb);
+  const warnArgb = Blend.harmonize(argbFromHex(WARNING_HUE_ANCHOR), primaryArgb);
+
+  // BASE HUE — the hue the counterpoint is measured FROM, and the subject of a
+  // defect found by the 25-seed sweep rather than by reading the code.
+  //
+  // Taking it from the emitted primary is correct only while the primary HAS a
+  // hue. For the `Monochrome` MCU variant it does not: seeds `beta` (seedHue 8),
+  // `gamma` (121) and `epsilon` (170) all emit the IDENTICAL greyscale
+  // `--od-accent-700: #5e5e5e`, whose HCT hue is 0 for every one of them. The
+  // counterpoint was therefore being derived from a value carrying no seed
+  // information at all, so every Monochrome brand in the entire seed space got
+  // the SAME second hue — a uniqueness defect, not merely a dull palette.
+  //
+  // `vector.seedHue` is the seed's identity hue and is always present, so it is
+  // the honest fallback: a greyscale brand's one chromatic family should express
+  // the seed's own identity, since nothing else in that brand does.
+  const baseHue = primaryHct.chroma >= PRIMARY_HUE_CHROMA_MIN
+    ? primaryHct.hue
+    : (vector && Number.isFinite(vector.seedHue) ? vector.seedHue : primaryHct.hue);
+
+  const rotation = HARMONY_ROTATION[vector && vector.harmonyRule] ?? DEFAULT_ROTATION;
+  const achromaticAccent = primaryHct.chroma < PRIMARY_HUE_CHROMA_MIN;
+
+  // ---- PLACING THE COUNTERPOINT -------------------------------------------
+  //
+  // A harmony rotation is defined RELATIVE TO A HUE THAT EXISTS. When the accent
+  // is achromatic there is nothing to be a counterpoint TO, so rotating away
+  // from it is meaningless — and measurably harmful: seed `rho` (seedHue 252,
+  // `mono`) rotated its counterpoint to 57deg, straight onto the semantic
+  // warning amber, while the seed's own identity hue at 252deg — the one hue a
+  // greyscale brand expresses nowhere else — sat unused across the wheel. So for
+  // an achromatic accent the FIRST candidate is the seed hue itself.
+  //
+  // SEMANTIC CLEARANCE. The counterpoint carries SECONDARY STRUCTURE: the dashed
+  // diagram plate and the focus ring. Landing it on a semantic hue costs the
+  // interface a signal — a dashed plate and a "this succeeded" plate become the
+  // same green, and the reader has to recover the difference from shape alone.
+  // So candidates are tried in order and the first one clearing EVERY semantic
+  // hue by SEMANTIC_CLEARANCE wins.
+  //
+  // Two collisions were found by the 25-seed sweep, not by reading the code, and
+  // they collided with DIFFERENT semantics — `beta` at 143deg against success
+  // ~140, `rho` at 57deg against warning ~57. That is why this is one search
+  // over a set of semantic hues rather than a special case per collision: fixing
+  // the success collision alone left the warning collision standing.
+  const semanticHues = [goodArgb, warnArgb, argbFromHex(hexOf("error"))]
+    .map((a) => Hct.fromInt(a).hue)
+    .filter((h) => Number.isFinite(h));
+  const clears = (h) => semanticHues.every((sh) => hueGap(h, sh) >= SEMANTIC_CLEARANCE);
+  const norm = (h) => ((h % 360) + 360) % 360;
+
+  // Ordered candidates. The first is the intended placement; the rest are
+  // fallbacks in decreasing fidelity to the harmony rule, all deterministic.
+  const offsets = achromaticAccent
+    ? [0, 120, -120, 60, -60]
+    : [rotation, -rotation, rotation + 45, -(rotation + 45)];
+  const candidates = offsets.map((o) => ({ offset: o, hue: norm(baseHue + o) }));
+  const chosen = candidates.find((c) => clears(c.hue)) || candidates[0];
+  const counterHue = chosen.hue;
+
   return {
     scaffold: TonalPalette.fromInt(argbFromHex(hexOf("surface-variant"))),
-    tint: TonalPalette.fromInt(argbFromHex(hexOf("primary"))),
-    good: TonalPalette.fromInt(
-      Blend.harmonize(argbFromHex(SUCCESS_HUE_ANCHOR), argbFromHex(hexOf("primary")))
-    ),
+    tint: TonalPalette.fromInt(primaryArgb),
+    // The counterpoint carries the ACCENT'S OWN CHROMA, not a fixed one: a
+    // Monochrome-variant seed has a low-chroma primary and gets a restrained
+    // counterpoint, a Vibrant seed gets a vivid one. The second hue therefore
+    // inherits the brand's intensity instead of imposing a new one.
+    counter: TonalPalette.fromHueAndChroma(counterHue, Math.max(primaryHct.chroma, MIN_COUNTER_CHROMA)),
+    good: TonalPalette.fromInt(goodArgb),
+    warn: TonalPalette.fromInt(warnArgb),
     neutral: TonalPalette.fromInt(argbFromHex(hexOf("background"))),
+    counterRotation: Math.round(chosen.offset * 100) / 100,
+    counterHue: Math.round(counterHue * 100) / 100,
+    // True when the intended harmony placement collided with a semantic hue and
+    // a fallback candidate was taken instead.
+    counterReflected: chosen.offset !== offsets[0],
+    counterAchromaticAccent: achromaticAccent,
   };
 }
 const toneHex = (palette, tone) => hexFromArgb(palette.tone(tone));
@@ -182,7 +368,14 @@ function diagramFamily(pal, mode) {
     "muted": toneHex(pal.scaffold, t.muted),
     "line": toneHex(pal.scaffold, t.line),
     "panel": toneHex(pal.scaffold, t.panel),
-    "panel2": toneHex(pal.scaffold, t.panel2),
+    // The DASHED/secondary plate is the counterpoint's first consumer, and it was
+    // chosen because it is PAINTED: design-system/diagrams/ has 33 SVGs whose
+    // .dash rule fills with this token. Deriving it from the counterpoint palette
+    // instead of the scaffold puts a genuine second hue into rendered output
+    // rather than into a token nothing references — a new unconsumed ramp would
+    // have moved the chromatic-range metric while changing no pixel, which is
+    // gaming the gate rather than fixing the design.
+    "panel2": toneHex(pal.counter, mode === "light" ? COUNTER_TONES.panel2Light : COUNTER_TONES.panel2Dark),
     "tint": toneHex(pal.tint, t.tint),
     "good": toneHex(pal.good, t.good),
     "good-line": toneHex(pal.good, t.goodLine),
@@ -200,19 +393,21 @@ const DIAGRAM_ORDER = ["ink", "muted", "line", "panel", "panel2", "tint", "good"
 //   --od-text-muted  <- on-surface-variant
 //   --od-border      <- outline-variant
 //   --od-on-accent   <- on-primary
-//   --od-focus       <- primary @ 0.6 alpha
 //   --od-danger      <- error
 //   --od-accent(-hover/-active) -> var() into the accent ramp (light: 700/800/900;
 //                       dark: 300/200/100 — lighter steps for a dark surface)
 // DNA-DERIVED, not an M3 role (see the DIAGRAM SCAFFOLD block above):
 //   --od-diagram-*   <- HCT tonal palettes of neutral-variant / primary /
-//                       harmonized-success, at measured tones
+//                       COUNTERPOINT / harmonized-success, at measured tones
+//   --od-focus       <- COUNTERPOINT tone 50/70 @ 0.6 alpha (a ring in the
+//                       accent's own hue is the hardest ring to see)
+//   --od-warning     <- warning-amber hue harmonized <=15deg toward primary,
+//                       tone 60/75 (was the frozen #d97706 / #f59e0b)
 //   --od-status-fg-* <- neutral palette tone 99 / 12 (theme-invariant)
 //   --od-success / --od-badge-success-bg <- harmonized-success tone 40 / 36
 //                       (theme-invariant; see the AA finding recorded on emit)
 // SYNTHESIZED (not seed-derived; sensible fixed values matching the live CSS):
 //   --od-logo-plate  = #ffffff (intentional constant white plate, both themes)
-//   --od-warning     = fixed status amber
 //   --od-shadow-color = rgba(shadow-role, alpha)
 //   named font vars, line-height, tracking, shadow recipes, easing, z, container-max
 // =============================================================================
@@ -225,7 +420,7 @@ function convert(doc) {
   const ramp = accentRamp(cl(L, "primary"));
 
   // --- DNA-derived diagram scaffold + theme-invariant status foregrounds -----
-  const pal = derivedPalettes(L);
+  const pal = derivedPalettes(L, doc.$extensions["digital.vasic.provenance"].vector);
   const diagram = { light: diagramFamily(pal, "light"), dark: diagramFamily(pal, "dark") };
   const statusFg = {
     light: toneHex(pal.neutral, STATUS_FG_TONES.light),
@@ -234,6 +429,19 @@ function convert(doc) {
   const successFill = {
     success: toneHex(pal.good, SUCCESS_FILL_TONES.success),
     badge: toneHex(pal.good, SUCCESS_FILL_TONES.badge),
+  };
+  // Semantic warning, DERIVED (replaces the frozen #d97706 / #f59e0b literals).
+  const warning = {
+    light: toneHex(pal.warn, WARNING_TONES.light),
+    dark: toneHex(pal.warn, WARNING_TONES.dark),
+  };
+  // Focus ring, DERIVED from the counterpoint rather than from the accent. A
+  // ring in the SAME hue as the control it surrounds is the hardest ring to
+  // see; the second hue is what makes keyboard focus locatable, so this is the
+  // counterpoint's second real consumer rather than decoration.
+  const focus = {
+    light: toneHex(pal.counter, COUNTER_TONES.focusLight),
+    dark: toneHex(pal.counter, COUNTER_TONES.focusDark),
   };
 
   const ts = doc.typography["type-scale"];
@@ -276,12 +484,12 @@ function convert(doc) {
   // --- durations derived from the DTCG motion group (ms) ----------------------
   const durMs = (name, fallback) => { const v = val(motion[name]); return v && typeof v === "object" ? `${v.value}ms` : fallback; };
 
-  return { ramp, fs, space, radius, ffam, motion, cl, L, D, durMs, doc, diagram, statusFg, successFill };
+  return { ramp, fs, space, radius, ffam, motion, cl, L, D, durMs, doc, diagram, statusFg, successFill, warning, focus, pal };
 }
 
 // ---- CSS emission (deterministic, fixed key order) -------------------------
 function emitCss(model, meta) {
-  const { ramp, fs, space, radius, ffam, cl, L, D, durMs, diagram, statusFg, successFill } = model;
+  const { ramp, fs, space, radius, ffam, cl, L, D, durMs, diagram, statusFg, successFill, warning, focus, pal } = model;
   const lines = [];
   const p = (s) => lines.push(s);
   // Comment-safe emit: neutralize any "*/" so a comment can never self-close
@@ -309,20 +517,28 @@ function emitCss(model, meta) {
   p(" * M3 role -> --od-* mapping:");
   p(" *   --od-bg<-background  --od-surface<-surface-container-low  --od-surface-2<-surface-container");
   p(" *   --od-text<-on-background  --od-text-muted<-on-surface-variant  --od-border<-outline-variant");
-  p(" *   --od-on-accent<-on-primary  --od-focus<-primary@0.6  --od-danger<-error");
+  p(" *   --od-on-accent<-on-primary  --od-danger<-error");
   p(" *   --od-accent-{50..900} <- HCT TonalPalette of primary (700==primary tone 40)");
   p(" *   --od-accent/-hover/-active -> ramp 700/800/900 (light), 300/200/100 (dark)");
   p(" * DNA-derived (HCT tonal palettes, not M3 roles — see dtcg-to-od.mjs):");
-  p(" *   --od-diagram-{ink,muted,line,panel,panel2} <- neutral-VARIANT palette");
-  p(" *     (light tones 20/40/55/98/94, dark 90/80/62/22/28)");
+  p(" *   --od-diagram-{ink,muted,line,panel} <- neutral-VARIANT palette");
+  p(" *     (light tones 20/40/55/98, dark 90/80/62/22)");
   p(" *   --od-diagram-tint <- primary palette (light 92, dark 22)");
+  p(` *   COUNTERPOINT palette: hue ${Math.round(pal.counterHue)}deg`);
+  p(` *     (= accent hue ${pal.counterRotation >= 0 ? "+" : "-"} ${Math.abs(pal.counterRotation)}deg, placed by vector.harmonyRule` +
+    `${pal.counterAchromaticAccent ? " from the SEED hue — the accent is achromatic" : ""}` +
+    `${pal.counterReflected ? "; moved to clear a semantic hue" : ""}), at the`);
+  p(" *     accent's own chroma (floored at 24). Consumers: --od-diagram-panel2");
+  p(" *     (light 94, dark 28) and --od-focus (light 50, dark 70 @ 0.6 alpha).");
+  p(" *   --od-warning <- warning-amber harmonized <=15deg toward primary,");
+  p(" *     tone 60 light / 75 dark (replaces the frozen #d97706 / #f59e0b)");
   p(" *   --od-diagram-good{,-line,-ink} <- success hue harmonized <=15deg toward");
   p(" *     primary (light tones 92/45/25, dark 18/70/88)");
   p(" *   --od-status-fg-{light,dark} <- neutral palette tone 99/12, theme-INVARIANT");
   p(" *   --od-success/--od-badge-success-bg <- harmonized success tone 40/36,");
   p(" *     theme-INVARIANT (a fill that flipped under a fixed foreground measured");
   p(" *     4.26:1 in dark — below WCAG AA; see the T4 status pairs)");
-  p(" * Synthesized constants: --od-logo-plate(#fff), --od-warning, shadow recipes,");
+  p(" * Synthesized constants: --od-logo-plate(#fff), shadow recipes,");
   p(" *   line-height, tracking, easing, z-index, container-max, named font vars.");
   p(" * ========================================================================== */");
   p("");
@@ -346,9 +562,9 @@ function emitCss(model, meta) {
   p("  --od-accent-hover: var(--od-accent-800);");
   p("  --od-accent-active: var(--od-accent-900);");
   p(`  --od-on-accent: ${cl(L, "on-primary")};`);
-  p(`  --od-focus: ${rgba(cl(L, "primary"), 0.6)};`);
+  p(`  --od-focus: ${rgba(focus.light, 0.6)};`);
   p("");
-  p("  /* Status (danger<-M3 error; warning synthesized; success DNA-derived). */");
+  p("  /* Status (danger<-M3 error; warning + success both DNA-derived). */");
   p("  /* --od-success and --od-badge-success-bg are the semantic success FILLS a");
   p("     status pill paints behind --od-status-fg-light. They are deliberately NOT");
   p("     re-declared in the dark blocks: a fixed foreground over a fill that flips");
@@ -357,7 +573,7 @@ function emitCss(model, meta) {
   p("     foreground — below WCAG AA 4.5:1. Tone 40/36 of the harmonized success");
   p("     palette clears it in both themes with the derived --od-status-fg-light. */");
   p(`  --od-success: ${successFill.success};`);
-  p("  --od-warning: #d97706;");
+  p(`  --od-warning: ${warning.light};`);
   p(`  --od-danger: ${cl(L, "error")};`);
   p(`  --od-badge-success-bg: ${successFill.badge};`);
   p(`  --od-shadow-color: ${rgba(cl(L, "shadow") || "#000000", 0.12)};`);
@@ -430,11 +646,11 @@ function emitCss(model, meta) {
     "  --od-accent-hover: var(--od-accent-200);",
     "  --od-accent-active: var(--od-accent-100);",
     `  --od-on-accent: ${cl(D, "on-primary")};`,
-    `  --od-focus: ${rgba(cl(D, "primary"), 0.6)};`,
+    `  --od-focus: ${rgba(focus.dark, 0.6)};`,
     // --od-success / --od-badge-success-bg are INTENTIONALLY absent here: they
     // sit under the theme-invariant --od-status-fg-light, so flipping them
     // breaks AA in one theme by construction. See the :root block.
-    "  --od-warning: #f59e0b;",
+    `  --od-warning: ${warning.dark};`,
     `  --od-danger: ${cl(D, "error")};`,
     `  --od-shadow-color: ${rgba(cl(D, "shadow") || "#000000", 0.5)};`,
     ...DIAGRAM_ORDER.map((k) => `  --od-diagram-${k}: ${diagram.dark[k]};`),

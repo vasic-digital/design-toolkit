@@ -12,7 +12,12 @@
 //   ONLY by qa/lib/apca.mjs's self-test to cross-validate our independent
 //   implementation. It is NOT used at runtime by any gate.
 
+// - colorjs.io (MIT, DIRECT pinned dep): OKLCH/HSL conversions for the
+//   chromatic-range gate (qa/check-chromatic-range.mjs), which needs the Color
+//   CLASS rather than the fixed measurements generators/lib/color.mjs exposes.
+
 export { Cam16, argbFromHex } from "@material/material-color-utilities";
+export { default as Color } from "colorjs.io";
 
 /** Lazy accessor for the reference APCA impl (self-test cross-check only). */
 export async function loadApcaReference() {

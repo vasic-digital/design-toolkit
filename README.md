@@ -153,6 +153,13 @@ design-toolkit/
 │   ├── material3.md
 │   └── dtcg-tokens.md
 ├── qa/design-qa-testbank.md  ← HelixQA-style Challenge/test-bank skeleton for design deliverables
+├── qa/check-tokens.mjs           T1..T5 for a --od-* candidate (coverage, browser, determinism,
+│                                 WCAG contrast, cross-seed uniqueness)
+├── qa/check-chromatic-range.mjs  the ANTI-MONOTONE gate: is a SINGLE seed's palette a real
+│                                 chromatic range, or a sepia duotone? (--report to measure
+│                                 without gating).  §1.1 proof: qa/prove-chromatic-range.sh
+├── qa/render-token-preview.mjs   renders a candidate to an HTML page + light/dark screenshots
+│                                 under evidence/ — evidence a human can actually look at
 └── docs/
     ├── USER-GUIDE.md             (task-oriented: how to design a thing with the toolkit)
     └── MANUAL.md                 (reference: every part, the design-DNA model, all platforms/formats)

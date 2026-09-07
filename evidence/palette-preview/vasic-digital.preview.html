@@ -1,3 +1,4 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
 /* =============================================================================
  * OpenDesign direction-generator candidate — GENERATED, DO NOT EDIT BY HAND.
  * Produced by design-toolkit/generators/dtcg-to-od.mjs (Helix §11.4.162) from a
@@ -211,3 +212,66 @@
     --od-diagram-good-ink: #bcec7b;
   }
 }
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--od-bg);color:var(--od-text);
+     font-family:var(--od-font-body);padding:var(--od-space-6,28px)}
+h1{font-family:var(--od-font-display);font-size:var(--od-fs-2xl);margin:0 0 4px;
+   letter-spacing:var(--od-tracking-tight);line-height:var(--od-lh-tight)}
+.sub{color:var(--od-text-muted);font-size:var(--od-fs-sm);margin:0 0 28px}
+h2{font-size:var(--od-fs-sm);font-weight:600;color:var(--od-text-muted);
+   margin:26px 0 10px;letter-spacing:var(--od-tracking-wide)}
+.row{display:flex;flex-wrap:wrap;gap:10px}
+.ramp{display:flex;flex-direction:column;align-items:center;gap:4px}
+.ramp i{width:58px;height:52px;border-radius:var(--od-radius-sm);border:1px solid var(--od-border);display:block}
+.ramp b{font-family:var(--od-font-mono);font-size:10px;font-weight:400;color:var(--od-text-muted)}
+.sw{display:flex;align-items:center;gap:8px;background:var(--od-surface);
+    border:1px solid var(--od-border);border-radius:var(--od-radius-md);padding:6px 10px 6px 6px}
+.sw span{width:30px;height:30px;border-radius:var(--od-radius-sm);border:1px solid var(--od-border);display:block}
+.sw code{font-family:var(--od-font-mono);font-size:11px;color:var(--od-text-muted)}
+.pill{display:inline-block;padding:4px 12px;border-radius:var(--od-radius-pill);
+      font-size:12px;font-weight:600;margin-right:8px}
+.p-ok{background:var(--od-success);color:var(--od-status-fg-light)}
+.p-ship{background:var(--od-badge-success-bg);color:var(--od-status-fg-light)}
+.p-dev{background:var(--od-warning);color:var(--od-status-fg-dark)}
+.p-err{background:var(--od-danger);color:var(--od-on-accent)}
+button{font:inherit;font-size:14px;padding:9px 18px;border-radius:var(--od-radius-md);
+       border:1px solid var(--od-border);background:var(--od-accent);color:var(--od-on-accent);cursor:pointer}
+button.ghost{background:var(--od-surface);color:var(--od-text)}
+button.focused{outline:3px solid var(--od-focus);outline-offset:2px}
+svg{background:var(--od-surface);border:1px solid var(--od-border);border-radius:var(--od-radius-lg)}
+.t{fill:var(--od-diagram-ink);font-size:12px;font-weight:600}
+.s{fill:var(--od-diagram-muted);font-size:10px}
+.gt{fill:var(--od-diagram-good-ink);font-size:12px;font-weight:600}
+.box{fill:var(--od-diagram-panel);stroke:var(--od-diagram-line);stroke-width:1.4}
+.dash{fill:var(--od-diagram-panel2);stroke:var(--od-diagram-line);stroke-width:1.4;stroke-dasharray:5 4}
+.tint{fill:var(--od-diagram-tint);stroke:var(--od-accent);stroke-width:1.4}
+.good{fill:var(--od-diagram-good);stroke:var(--od-diagram-good-line);stroke-width:1.4}
+.conn{stroke:var(--od-diagram-line);stroke-width:1.4;fill:none}
+</style></head><body>
+<h1>vasic-digital</h1>
+<p class="sub">Every colour on this page is read from the candidate's own <code>--od-*</code> tokens. Nothing is hand-painted.</p>
+
+<h2>Accent ramp</h2><div class="row"><div class="ramp"><i style="background:var(--od-accent-50)"></i><b>50</b></div><div class="ramp"><i style="background:var(--od-accent-100)"></i><b>100</b></div><div class="ramp"><i style="background:var(--od-accent-200)"></i><b>200</b></div><div class="ramp"><i style="background:var(--od-accent-300)"></i><b>300</b></div><div class="ramp"><i style="background:var(--od-accent-400)"></i><b>400</b></div><div class="ramp"><i style="background:var(--od-accent-500)"></i><b>500</b></div><div class="ramp"><i style="background:var(--od-accent-600)"></i><b>600</b></div><div class="ramp"><i style="background:var(--od-accent-700)"></i><b>700</b></div><div class="ramp"><i style="background:var(--od-accent-800)"></i><b>800</b></div><div class="ramp"><i style="background:var(--od-accent-900)"></i><b>900</b></div></div>
+
+<h2>Core roles</h2><div class="row"><div class="sw"><span style="background:var(--od-bg)"></span><code>--od-bg</code></div><div class="sw"><span style="background:var(--od-surface)"></span><code>--od-surface</code></div><div class="sw"><span style="background:var(--od-surface-2)"></span><code>--od-surface-2</code></div><div class="sw"><span style="background:var(--od-text)"></span><code>--od-text</code></div><div class="sw"><span style="background:var(--od-text-muted)"></span><code>--od-text-muted</code></div><div class="sw"><span style="background:var(--od-border)"></span><code>--od-border</code></div><div class="sw"><span style="background:var(--od-accent)"></span><code>--od-accent</code></div><div class="sw"><span style="background:var(--od-on-accent)"></span><code>--od-on-accent</code></div><div class="sw"><span style="background:var(--od-success)"></span><code>--od-success</code></div><div class="sw"><span style="background:var(--od-warning)"></span><code>--od-warning</code></div><div class="sw"><span style="background:var(--od-danger)"></span><code>--od-danger</code></div><div class="sw"><span style="background:var(--od-focus)"></span><code>--od-focus</code></div></div>
+
+<h2>Diagram scaffold — the arrangement the design-system SVGs create</h2>
+<svg width="640" height="150" viewBox="0 0 640 150">
+  <path class="conn" d="M150 55 H196"/><path class="conn" d="M304 55 H350"/><path class="conn" d="M458 55 H504"/>
+  <rect class="box"  x="18"  y="26" width="132" height="58" rx="8"/>
+  <text class="t" x="34" y="52">node plate</text><text class="s" x="34" y="70">--od-diagram-panel</text>
+  <rect class="dash" x="196" y="26" width="108" height="58" rx="8"/>
+  <text class="t" x="210" y="52">dashed</text><text class="s" x="210" y="70">panel2 · counterpoint</text>
+  <rect class="tint" x="350" y="26" width="108" height="58" rx="8"/>
+  <text class="t" x="364" y="52">tinted</text><text class="s" x="364" y="70">tint · accent</text>
+  <rect class="good" x="504" y="26" width="118" height="58" rx="8"/>
+  <text class="gt" x="518" y="52">success</text><text class="s" x="518" y="70">good</text>
+</svg>
+
+<h2>Status pills</h2>
+<div><span class="pill p-ok">Active</span><span class="pill p-ship">Shipped</span><span class="pill p-dev">In development</span><span class="pill p-err">Failed</span></div>
+
+<h2>Controls — the third swatch shows the focus ring (counterpoint hue)</h2>
+<div class="row"><button>Save changes</button><button class="ghost">Cancel</button><button class="ghost focused">Keyboard focus</button></div>
+</body></html>
