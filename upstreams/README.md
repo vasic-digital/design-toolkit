@@ -32,10 +32,18 @@ into a refusal; the recipes turn the refusal into a correct push.
 | File | State | Target |
 |---|---|---|
 | `github.sh` | **active** | `git@github.com:vasic-digital/design-toolkit.git` |
-| `gitlab.sh.disabled` | **inert** | `git@gitlab.com:vasic-digital/design-toolkit.git` |
+| `gitlab.sh` | **active since 2026-09-08** | `git@gitlab.com:vasic-digital/design-toolkit.git` |
 
-`gitlab.sh.disabled` does not end in `.sh`, so it does not match the `*.sh`
-glob that either script iterates. Nothing reads it, nothing pushes to it.
+**`gitlab.sh` was `gitlab.sh.disabled` until 2026-09-08, and the sentence that
+stood here — *"does not end in `.sh`, so it does not match the `*.sh` glob that
+either script iterates. Nothing reads it, nothing pushes to it"* — is WITHDRAWN
+as no longer true.** It was accurate for as long as the file carried the suffix.
+Both recipes are now active, so `push_all.sh` pushes this repository to GitHub
+**and** to the private GitLab mirror on every run.
+
+Enabled on operator decision #15, 2026-09-07, recorded in the umbrella at
+`docs/OPERATOR-DECISIONS-2026-09-07.md`. That decision **overruled** a
+recommendation to leave it disabled, and the record says so.
 
 ## The asymmetry between the two surfaces
 
@@ -73,11 +81,22 @@ nonexistent one — measured, gitlab.com answers both with a redirect to
 authenticated query separates them, so treat any "no mirror" conclusion drawn
 from an anonymous request as **could-not-determine**, never as absence.
 
-## Enabling the mirror is an OPERATOR decision
+## Enabling the mirror was an OPERATOR decision — and it was taken
+
+**It has been enabled.** The two reasons below are kept in the present tense
+because they are what an operator had to weigh, and because reason 1 is the
+argument that made this particular direction safe rather than merely permitted.
+Measured 2026-09-08 immediately before the first push: GitHub `main` at
+`ddb9b65`, GitLab `main` at `520c436` (unmoved since 2026-08-08),
+`merge-base --is-ancestor` TRUE and `rev-list --left-right --count` **0 / 9** —
+nine commits existed only on GitHub, none only on GitLab. Visibility was
+re-verified in the same session with `glab api
+projects/vasic-digital%2Fdesign-toolkit`: **private**, against a **public**
+`origin`. Public onto private, closing a nine-commit lag with nothing diverged.
 
 Renaming `gitlab.sh.disabled` to `gitlab.sh` makes the very next `push_all.sh`
 run push this repository's history to the **private** mirror, closing the gap in
-one step. That may well be the right thing. It is not this directory's call to
+one step. That may well be the right thing. It was not this directory's call to
 make, for two reasons stated plainly rather than assumed:
 
 1. **Visibility asymmetry.** The two surfaces have different audiences. Syncing
@@ -88,17 +107,18 @@ make, for two reasons stated plainly rather than assumed:
    repository's visibility, are operator decisions. This file does not overrule
    that.
 
-To enable it deliberately:
+It was enabled with exactly this sequence, and the guard was run BEFORE the
+first push, not after it:
 
 ```bash
 git mv upstreams/gitlab.sh.disabled upstreams/gitlab.sh
 chmod +x upstreams/gitlab.sh
 # then verify what the recipes now point at, BEFORE pushing:
-bash qa/upstreams-recipe-origin-check.sh
+bash qa/upstreams-recipe-origin-check.sh    # 8 pass, 0 fail, 0 note
 ```
 
-Nothing here changes either repository's visibility, and nothing here pushes to
-the mirror.
+To DISABLE it again, reverse the `git mv`. Nothing here changes either
+repository's visibility.
 
 ## The guard on this directory
 
