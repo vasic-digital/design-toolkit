@@ -78,7 +78,8 @@ function.
 
 ## 2. End-to-end runbook
 
-All paths are relative to the repo root `/Volumes/T7/Projects/vasic` unless noted.
+All paths are relative to the repo root (wherever this umbrella checkout lives
+on disk) unless noted.
 Stages 1 and 2 need only Node ≥ 20 and `npm install` in
 `design-toolkit/generators/`. The OpenDesign daemon (step A) is **optional** — it
 is only needed if you want OpenDesign to *propose* a fresh direction; the seed +
