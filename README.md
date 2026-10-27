@@ -4,6 +4,9 @@ A reusable, license-clean **design-capability layer** that combines with **OpenD
 produce **unique, enterprise-grade, non-repeatable UI/UX** across every platform, OS, and app
 type — deterministically, from a per-project seed.
 
+> **Release:** current tag `v0.2.3` (2026-10-27). See [`CHANGELOG.md`](CHANGELOG.md) for the version history.
+> The status block below describes the original first increment and is kept for history.
+
 > **Status: FIRST INCREMENT — review-ready local scaffold.**
 > This is the local-files deliverable of Phase A/B from
 > `_analysis/design-research/INCORPORATION-PLAN.md`. No remote repos are created yet, no git
