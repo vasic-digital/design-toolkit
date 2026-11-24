@@ -24,7 +24,7 @@ agent and the `gen-tokens.mjs` / `gen-marks.mjs` pipeline.
 | Library | License | Role |
 |---------|---------|------|
 | material-color-utilities | **Apache-2.0** | seed → HCT tonal palettes + role-mapped light/dark scheme; named variants = personality. The deterministic uniqueness primitive. |
-| color.js (colorjs.io) | **MIT** | OKLCH-first conversion/interpolation, gamut-safe P3, WCAG/APCA contrast. |
+| color.js (colorjs.io) | **MIT** | OKLCH-first conversion/interpolation, gamut-safe P3, WCAG contrast. |
 | chroma.js | **BSD-3-Clause** | tiny perceptual `chroma.scale()` ramps (alt/base to color.js). |
 | Style Dictionary | **Apache-2.0** | DTCG → CSS/iOS/Android/JS emitter — sits *behind* OpenDesign's contract. |
 | utopia-core | **ISC** ✅ *verified 2026-08-06 (npm registry + package.json)* | fluid `clamp()` type/space scales from ratio + multiplier. Research flagged "verify LICENSE" — now confirmed ISC (permissive, MIT-equivalent). |
@@ -53,7 +53,7 @@ git submodule add https://github.com/adobe/leonardo.git                         
 
 | Repo | License | Role |
 |------|---------|------|
-| Radix Colors | **MIT** | 12-step accessible scales, APCA-tuned, auto dark, P3 — the "restrained" personality. |
+| Radix Colors | **MIT** | 12-step accessible scales, auto dark, P3 — the "restrained" personality. |
 | Open Color | **MIT** (v1.9.1) | 13 hues × 10 shades utility palette. |
 
 ```bash

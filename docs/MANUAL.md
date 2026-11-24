@@ -146,8 +146,8 @@ verdict (§11.4.134).
 - **Licenses:** vendor MIT/Apache/BSD/ISC only; GPL stays external (MCP process); no-license items not
   incorporated. Verified this build: **utopia-core = ISC**.
 - **Excluded (do not add):** Official Figma Dev Mode MCP (paid seat), 21st.dev Magic MCP (paid/keyed),
-  LottieFiles Creator MCP (hosted), Every Layout / Refactoring UI (paid — concepts only), APCA as an
-  authoritative gate (advisory — enforce WCAG 2.2). Full list: `mcp/INSTALL.md`, `submodules/PLAN.md`.
+  LottieFiles Creator MCP (hosted), Every Layout / Refactoring UI (paid — concepts only), APCA (removed;
+  licence — enforce WCAG 2.2). Full list: `mcp/INSTALL.md`, `submodules/PLAN.md`.
 - **Pilot-first (don't gate CI):** coolors-mcp, design-token-bridge-mcp, mcp-image-compare.
 - **Anti-bluff:** unverified items marked inline; PASS requires evidence.
 

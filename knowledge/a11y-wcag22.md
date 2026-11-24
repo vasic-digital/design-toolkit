@@ -3,7 +3,7 @@
 > **Source:** W3C — Web Content Accessibility Guidelines 2.2 (Recommendation, 2024-12-12).
 > https://www.w3.org/TR/WCAG22/ · **License:** W3C Document License (freely readable/redistributable;
 > normative text unmodifiable). Ratios are the **legally authoritative** baseline — enforce these,
-> not APCA (advisory only). This file is a distilled checklist, not the normative text.
+> not APCA (not used). This file is a distilled checklist, not the normative text.
 
 **Target conformance: WCAG 2.2 Level AA.** This is a hard gate — `design-qa-auditor` fails the build
 on any violation.

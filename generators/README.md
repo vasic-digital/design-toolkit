@@ -113,9 +113,9 @@ All permissive (Apache-2.0 / MIT / BSD-3 / ISC), pinned in `package.json`:
 > **Note:** `svgdom` is pinned to the exact version `0.1.19` — newer 0.1.x
 > releases regressed serialization with `@svgdotjs/svg.js@3.2.x`.
 
-> **Known audit finding:** the 5 `high` advisories reported by `npm audit` all
-> originate from the **optional** dependency `@adobe/leonardo-contrast-colors`
-> (transitive `mout`/`ciebase`/`ciecam02`). The engine does **not** import
-> leonardo — contrast is measured with `colorjs.io` — so the core pipeline is
-> unaffected. Remove the optional dep (or `npm install --omit=optional`) to
-> clear the advisories entirely.
+> **Removed 2026-11-24:** the unused optional dependency
+> `@adobe/leonardo-contrast-colors` is gone from `package.json` and the lockfile. It
+> pulled `apca-w3` ("Limited W3 License") and `colorparsley` (AGPL-3.0), and was the source
+> of the `npm audit` advisories (`mout`/`ciebase`/`ciecam02`). Contrast is measured with
+> `colorjs.io` (WCAG 2.x). Do not re-add it; `generators/test/no-restricted-licences.test.mjs`
+> fails if copyleft or use-restricted packages return to the lockfile.

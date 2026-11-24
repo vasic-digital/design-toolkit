@@ -32,7 +32,7 @@ bounded ranges and justify each choice**.
 3. **Contrast is a hard gate, not a nicety.** Every semantic foreground/background pair MUST pass
    WCAG 2.2: **4.5:1** normal text, **3:1** large text (≥24px, or ≥18.66px bold) and non-text
    UI/graphics (1.4.11). Verify before you hand off; if a generated pair fails, adjust tone (HCT
-   tone / OKLCH L) until it passes — do not ship a failing pair. APCA is advisory only.
+   tone / OKLCH L) until it passes — do not ship a failing pair. APCA is not used (removed 2026-11-24, licence); an advisory WCAG 2.x AAA-tier screen exists.
 4. **Container-only pipeline.** The generator runs in a container; any keys come from
    `~/api_keys.sh`, never from repo or config.
 5. **Bounded selection.** Pick from the ranges below and state *why* each value fits the adjectives.

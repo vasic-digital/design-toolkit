@@ -20,13 +20,13 @@ without building the runner first**). As of this writing, run-checks.mjs impleme
 validity), D2 (WCAG AA contrast), D7 (hue-delta), U1/D8 (min pairwise ΔE00 ≥10 on primaries),
 U2 (min pairwise CAM16-UCS ΔE′ ≥8 on primaries), U3 (combined weighted DNA-distance ≥0.25 + color
 axis floor — GATING), U4 (type-pair distance ≥0.3 — GATING), U5 (Poisson-disk capacity — RUN but
-reported as a METRIC, never gates), A1b (APCA Lc — RUN but ADVISORY, never gates), DET1
+reported as a METRIC, never gates), A1b (WCAG 2.x enhanced contrast — RUN but ADVISORY, never gates), DET1
 (determinism: same seed ⇒ byte-identical token + SVG-mark sha256), and C-PLAT platform conformance
 (web + android contrast, and android body-size, RUN + GATING against the emitted tokens;
 UNVERIFIED/secondhand/non-token floors honestly SKIP)** with real assertions.
 Real captured output for all of these lives at
 [`../evidence/qa-run-hardened-checks.txt`](../evidence/qa-run-hardened-checks.txt) (ΔE00, CAM16-UCS
-ΔE′, weighted DNA distance, type-pair distance, capacity, APCA Lc, and determinism hashes — no
+ΔE′, weighted DNA distance, type-pair distance, capacity, enhanced WCAG contrast, and determinism hashes — no
 hardcoded numbers); the U3/U4/U5 slice plus its golden-BADs is also captured at
 [`../evidence/qa-uniqueness-extended.txt`](../evidence/qa-uniqueness-extended.txt); the C-PLAT slice
 (clean run + golden-BAD exit-1 proof + per-platform gate/SKIP table) is captured at
@@ -41,7 +41,7 @@ exists. Do **not** claim any `SPEC` check passes.
 - **JND caveat** — ΔE00 ≈ 1.0 is the *nominal* JND but the JND is **not uniform** across color space
   and ΔE00 is contested at large differences; thresholds are guidance, not physics
   (`../knowledge/uniqueness-engine.md` §4).
-- **APCA-draft caveat** — APCA is a **DRAFT (WCAG 3, non-normative)**; it is an *additional* screen,
+- **APCA removed (2026-11-24)** — APCA is a DRAFT (WCAG 3) and the `apca-w3` licence does not clearly permit reuse; A1b is now a WCAG 2.x enhanced-tier advisory screen,
   **never a replacement** for the normative WCAG 2.2 AA gate (uniqueness-engine §5).
 - **DTCG-status caveat** — DTCG is a **Community Group draft** (first stable module set 2025.10), not
   a W3C Recommendation (uniqueness-engine §7).
@@ -62,7 +62,7 @@ exists. Do **not** claim any `SPEC` check passes.
 | Challenge | Verifies | Runner |
 |-----------|----------|--------|
 | **C-UNIQ** — Uniqueness | ≥2 projects on the shared engine read as **distinct brands** in token space | run-checks.mjs (U1/D8 + U2 + U3 + U4 gating; U5 reported metric) |
-| **C-A11Y** — a11y HARD-FAIL | a per-project accessibility **floor** that fails the build the instant it is breached | run-checks.mjs (A1a gating + A1b APCA advisory, token-level) + AUDITOR (A1–A4 rendered) |
+| **C-A11Y** — a11y HARD-FAIL | a per-project accessibility **floor** that fails the build the instant it is breached | run-checks.mjs (A1a gating + A1b WCAG-enhanced advisory, token-level) + AUDITOR (A1–A4 rendered) |
 | **C-PLAT** — Platform-conformance | per-platform target-size / type-scale / safe-area / contrast | run-checks.mjs (**web + android contrast/body-size RUN + GATING**; UNVERIFIED/secondhand/target-size floors honestly SKIP) + AUDITOR (rendered) |
 | **C-DET** — Determinism | same seed ⇒ **byte-identical** tokens (+ SVG mark) | run-checks.mjs (DET1) — see §5 |
 
@@ -95,7 +95,7 @@ A **binary floor**: any breach fails the build immediately (no "score", no parti
 | # | Check | Metric | Threshold | Tag | exec |
 |---|-------|--------|-----------|-----|------|
 | **A1a** | WCAG 2.2 AA contrast (normative) | `contrast_pass_rate` over **all** semantic fg/bg pairs, **both** light+dark | **== 100%** (text 4.5:1, large 3:1, UI/graphic 3:1) | **[E]** | **RUN** (D2, token-level) + **AUDITOR** (rendered) |
-| **A1b** | APCA (secondary screen) | APCA **Lc** per font-size class | **Lc ≥ 90 / 75 / 60 / 45 / 30** (fluent-body-info / body / supporting+container / fill-label+large / non-text, per APCA table) | **[E]** metric, **DRAFT** | **RUN — ADVISORY, NEVER GATES** (`qa/lib/apca.mjs` — faithful APCA-W3 0.1.9, cross-validated exact vs `apca-w3`; each semantic pair assigned its role-appropriate APCA minimum; all 84 pairs (3 seeds ×2 modes) clear their tier — dark-mode primary body lands Lc ~88.5–88.9, honestly reported as just under the informational fluent-90 tier). **APCA-draft caveat: additional screen only, never replaces A1a** — excluded from the overall verdict/exit code |
+| **A1b** | WCAG 2.x enhanced contrast (secondary screen) | contrast ratio per role tier | **≥ 7 / 4.5 / 3** (body / supporting+container / fill-label+non-text) | **[E]** metric | **RUN — ADVISORY, NEVER GATES** (`qa/run-checks.mjs`, `contrastRatio` from `generators/lib/color.mjs`; replaces the former APCA screen removed 2026-11-24 for licence reasons). Additional screen only, never replaces A1a — excluded from the overall verdict/exit code |
 | **A2** | body size | rendered body font-size | **≥ platform min** (web ~16px; iOS 17pt; Android body 16sp; per `platforms/*`) | **[H]** on the floor | **AUDITOR** |
 | **A3** | measure + line-height | line length (measure) + line-height | measure **45–75 char** (print/editorial); body line-height **≥ 1.4** (WCAG 1.4.12 spacing) | **[H]**/[E] | **AUDITOR** |
 | **A4** | reduced-motion collapse | every motion token has a reduced-motion counterpart that lands the **same end-state** with no movement (2.3.3/2.2.2) | 100% of motions collapse | **[E]** | **AUDITOR** (grep + rendered reduced-motion golden) |
@@ -154,7 +154,7 @@ DTCG `$description`/provenance so a hash mismatch is diagnosable.
   "rationale": "…",
   "measurements": { "metric": "deltaE00", "value": 12.4, "threshold": 10, "op": ">=" },
   "tags": ["[E]-metric", "[H]-threshold"],
-  "caveats": ["JND-non-uniform", "APCA-draft", "platform-metric-UNVERIFIED"],
+  "caveats": ["JND-non-uniform", "platform-metric-UNVERIFIED"],
   "evidence": ["uniqueness/deltae.json", "goldens/…png", "hashes/tokens.sha256"]
 }
 ```
@@ -177,7 +177,7 @@ A uniqueness/conformance suite is only trustworthy if a **deliberately broken** 
 | U4 type-pair | different display+body pairs (distance 0.5) | assign both projects the **same** font pair (distance 0) |
 | U5 capacity | radius shrank + saturation logged | request N+1 designs in a full space with **no** shrink/report (infinite loop) |
 | A1a contrast | all pairs ≥ threshold, both modes | drop one on-primary pair to 3.8:1 (rate < 100%) |
-| A1b APCA | Lc meets the size class | drop body Lc below 75 (secondary screen flags; A1a still governs) |
+| A1b WCAG-enhanced | ratio meets the role tier | drop body contrast below 7:1 (secondary screen flags; A1a still governs) |
 | A4 reduced-motion | every motion collapses to end-state | delete one `prefers-reduced-motion` branch |
 | P1 target size | iOS control = 44pt | shrink one iOS control to 32pt |
 | P3 safe area | uses `env(safe-area-inset-*)` | hard-code a 0px top inset (content under the notch) |
@@ -191,14 +191,14 @@ A uniqueness/conformance suite is only trustworthy if a **deliberately broken** 
   (capacity is informational; the graceful-degradation policy governs the generation loop, not the
   build). Any U1–U4 FAIL blocks.
 - **CM-DESIGN-A11Y-FLOOR** (blocking): C-A11Y **A1a == 100%** (RUN token-level + AUDITOR rendered);
-  A2–A4 blocking via the auditor harness. **A1b (APCA) is RUN but ADVISORY — it is measured and
+  A2–A4 blocking via the auditor harness. **A1b (WCAG 2.x enhanced) is RUN but ADVISORY — it is measured and
   reported, but never gates (draft/secondary never gates alone).**
 - **CM-DESIGN-PLATFORM** (blocking per shipped platform): C-PLAT P1–P5 PASS for each target. **Token-level
   today (RUN + gating in run-checks.mjs):** P4 contrast (web + android) and P2 body-size (android ≥16sp).
   UNVERIFIED/secondhand/non-token floors (target-size P1, safe-area P3, material P5, focus P6) honestly
   **SKIP** (advisory) pending the AUDITOR rendered harness — they do not gate until that runner exists.
 - **CM-DESIGN-DETERMINISM** (blocking): C-DET DET1 byte-identical (RUN in run-checks.mjs).
-- **Draft/secondary never gate alone:** APCA (A1b) is advisory; pilot MCPs don't gate (INSTALL.md §3).
+- **Draft/secondary never gate alone:** A1b is advisory; pilot MCPs don't gate (INSTALL.md §3).
   Playwright `toHaveScreenshot` + Chrome DevTools Lighthouse + run-checks.mjs are the gate-grade tools.
 
 ## 9. Evidence bundle layout
@@ -214,7 +214,7 @@ _tests/evidence/design-toolkit/<run-id>/
 │   └── capacity-report.json          # U5 (RUN, reported metric)
 ├── a11y/
 │   ├── contrast-table.json           # A1a per pair × mode (RUN + AUDITOR)
-│   ├── apca.json                     # A1b (SPEC, advisory)
+│   ├── wcag-enhanced.json            # A1b (SPEC, advisory)
 │   ├── type-metrics.json             # A2/A3 body-size/measure/line-height
 │   └── reduced-motion/*.png          # A4 collapse goldens
 ├── platform/<platform>/
@@ -233,7 +233,7 @@ Executable **today** in [`run-checks.mjs`](run-checks.mjs) with real assertions 
 [`../evidence/qa-uniqueness-extended.txt`](../evidence/qa-uniqueness-extended.txt)): **U1/D8 (ΔE00),
 U2 (CAM16-UCS ΔE′ via the pinned material-color-utilities), U3 (weighted DNA-distance ≥0.25 + color
 floor — gating), U4 (type-pair distance ≥0.3 — gating), U5 (Poisson-disk capacity — reported metric),
-A1a (token-level WCAG AA contrast), A1b (APCA Lc — advisory), DET1 (determinism), and **C-PLAT
+A1a (token-level WCAG AA contrast), A1b (WCAG 2.x enhanced contrast — advisory), DET1 (determinism), and **C-PLAT
 platform conformance** — web + android **contrast** and android **body-size (≥16sp)** RUN + GATING
 against the emitted tokens ([`platform-metrics.mjs`](platform-metrics.mjs) floors +
 [`lib/platform.mjs`](lib/platform.mjs) runner; captured in

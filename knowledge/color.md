@@ -48,8 +48,7 @@ Every foreground has an `on-*` partner sized to pass contrast against its backgr
 
 - Compute with `color.js` `contrastWCAG21()` (or coolors MCP). **Any failing pair → adjust HCT tone /
   OKLCH L until it passes.** Do not ship a failing pair.
-- **APCA** (Lc) is **advisory only** — bespoke beta license, pulled from the WCAG 3 draft, unsettled
-  as of 2026. May inform tuning; never the gate.
+- **APCA** (Lc) is **not used** — its reference package carries a use-restricted licence ("Limited W3 License") and was removed 2026-11-24; WCAG 2.x is the only contrast metric.
 - Dark mode is not "invert" — regenerate roles from the tonal palette (M3 uses lower tones for
   surfaces, higher for on-colors). Re-check every pair in both modes.
 

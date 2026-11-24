@@ -16,7 +16,7 @@
 //        GATING — real [E] floors; UNVERIFIED / secondhand / target-size floors
 //        honestly SKIP with reason. See qa/platform-metrics.mjs + qa/lib/platform.mjs)
 // ADVISORY checks (RUN + measured, but NEVER gate — reported for information):
-//   A1b  APCA Lc                        (perceptual contrast; DRAFT/WCAG3, additional screen only)
+//   A1b  WCAG 2.x enhanced contrast     (AAA-tier role minimums; additional screen only, advisory)
 //   U5   Poisson-disk capacity report   (remaining blue-noise capacity at r=D_min; a METRIC, not a gate)
 //
 // Perceptual uniqueness rationale: hue delta (D7) is a cheap screen; two seeds
@@ -25,8 +25,7 @@
 // perceptual gap with two independent color-difference models. ΔE00/ΔE-OK are
 // implemented dependency-free in qa/lib/deltae.mjs (validated vs colorjs.io);
 // CAM16-UCS ΔE′ is computed in qa/lib/cam16.mjs via the pinned Google
-// material-color-utilities Cam16 (Li et al. 2017); APCA Lc in qa/lib/apca.mjs
-// is a faithful APCA-W3 0.1.9 implementation (cross-validated vs apca-w3).
+// material-color-utilities Cam16 (Li et al. 2017). APCA was removed 2026-11-24 (licence).
 // U3 (DNA-distance), U4 (type-pair) are now RUN + gating; U5 (capacity) is RUN
 // but reported as a METRIC (never gates). C-PLAT platform conformance is now RUN:
 // web + android contrast (and android body-size) are real GATING [E] checks
@@ -42,7 +41,7 @@
 //
 // If --tokens is omitted, a set is generated in-memory from the first seed.
 // THREE-VALUED EXIT (§11.4.6 — a 2 is NEVER a pass):
-//   0 = every GATING check PASSed. (A1b APCA is advisory and never changes it.)
+//   0 = every GATING check PASSed. (A1b is advisory and never changes it.)
 //   1 = at least one gating check FAILed — a real finding about the tokens.
 //   2 = COULD NOT DETERMINE — the runner could not measure anything, because its
 //       toolchain or its input is absent, not because the tokens are wrong.
@@ -76,19 +75,18 @@ function undetermined(reason, hint) {
   process.exit(2);
 }
 
-let validateDtcg, extractSchemes, evaluateScheme, SEMANTIC_PAIRS, oklchHue, hueDelta,
+let validateDtcg, extractSchemes, evaluateScheme, SEMANTIC_PAIRS, oklchHue, hueDelta, contrastRatio,
     generateTokens, deriveVector, generateMark, deltaE00, deltaEOK,
-    deltaEPrimeCam16, deltaECam16, apcaLc, typePairDistance,
+    deltaEPrimeCam16, deltaECam16, typePairDistance,
     axisSubDistances, dnaDistance, DNA_WEIGHTS, COLOR_ANCHOR, poissonCapacityReport,
     checkPlatformConformance;
 try {
   ({ validateDtcg, extractSchemes } = await import("../generators/lib/dtcg.mjs"));
-  ({ evaluateScheme, SEMANTIC_PAIRS, oklchHue, hueDelta } = await import("../generators/lib/color.mjs"));
+  ({ evaluateScheme, SEMANTIC_PAIRS, oklchHue, hueDelta, contrastRatio } = await import("../generators/lib/color.mjs"));
   ({ generateTokens, deriveVector } = await import("../generators/lib/tokens.mjs"));
   ({ generateMark } = await import("../generators/lib/marks.mjs"));
   ({ deltaE00, deltaEOK } = await import("./lib/deltae.mjs"));
   ({ deltaEPrimeCam16, deltaECam16 } = await import("./lib/cam16.mjs"));
-  ({ apcaLc } = await import("./lib/apca.mjs"));
   ({ typePairDistance } = await import("./lib/typedna.mjs"));
   ({ axisSubDistances, dnaDistance, DNA_WEIGHTS, COLOR_ANCHOR, poissonCapacityReport } = await import("./lib/dnadist.mjs"));
   ({ checkPlatformConformance } = await import("./lib/platform.mjs"));
@@ -454,36 +452,29 @@ dimensions.push({
 });
 log(`U5 capacity-report (METRIC, non-gating): r=D_min ${capacity.radius_r_eq_Dmin}, accepted ${capacity.acceptedCount}, est. max ≈${capacity.estimatedMaxPoints}, remaining ≈${capacity.estimatedRemainingCapacity}, saturated=${capacity.saturated}`);
 
-// --- A1b: APCA Lc (ADVISORY — DRAFT/WCAG3, never gates) ----------------------
-// APCA is a DRAFT (WCAG 3, non-normative). This is an ADDITIONAL perceptual
-// screen only; it NEVER replaces the normative WCAG 2.2 AA gate (D2). It is
-// therefore marked advisory:true and does NOT affect the overall verdict/exit
-// code (uniqueness-and-platform-conformance.md A1b + "draft never gates alone").
-// Each semantic pair is assigned the APCA minimum appropriate to its rendered
-// text role (per the APCA font/size lookup tiers): running body text Lc>=75,
-// supporting/container text Lc>=60, fill labels & large/headline Lc>=45,
-// non-text UI edges Lc>=30. The stricter "fluent body" Lc>=90 tier is reported
-// informationally for the primary running-text pairs.
-const APCA_ROLE = {
-  // primary running body text
-  "on-surface/surface": { cls: "body", min: 75, fluent90: true },
-  "on-background/background": { cls: "body", min: 75, fluent90: true },
-  "inverse-on-surface/inverse-surface": { cls: "body", min: 75 },
-  // supporting / secondary text
-  "on-surface-variant/surface-variant": { cls: "supporting", min: 60 },
-  // text on tonal containers (supporting copy)
-  "on-primary-container/primary-container": { cls: "container", min: 60 },
-  "on-secondary-container/secondary-container": { cls: "container", min: 60 },
-  "on-tertiary-container/tertiary-container": { cls: "container", min: 60 },
-  "on-error-container/error-container": { cls: "container", min: 60 },
-  // labels on saturated fills (buttons/chips — large/emphasis tier)
-  "on-primary/primary": { cls: "fill-label", min: 45 },
-  "on-secondary/secondary": { cls: "fill-label", min: 45 },
-  "on-tertiary/tertiary": { cls: "fill-label", min: 45 },
-  "on-error/error": { cls: "fill-label", min: 45 },
+// --- A1b: WCAG 2.x ENHANCED (AAA-tier) contrast (ADVISORY, never gates) -------
+// Replaces the former APCA screen (removed 2026-11-24: apca-w3's "Limited W3 License"
+// does not clearly permit reuse and its optional chain pulled AGPL colorparsley). This is
+// an ADDITIONAL stricter screen on the same normative WCAG 2.x ratio the D2 gate uses;
+// it NEVER replaces D2 and does not affect the overall verdict/exit code.
+// Role minimums: running body text 7:1 (SC 1.4.6 AAA), supporting/container text 4.5:1,
+// fill labels / large text 3:1, non-text UI edges 3:1 (SC 1.4.11).
+const WCAGX_ROLE = {
+  "on-surface/surface": { cls: "body", min: 7 },
+  "on-background/background": { cls: "body", min: 7 },
+  "inverse-on-surface/inverse-surface": { cls: "body", min: 7 },
+  "on-surface-variant/surface-variant": { cls: "supporting", min: 4.5 },
+  "on-primary-container/primary-container": { cls: "container", min: 4.5 },
+  "on-secondary-container/secondary-container": { cls: "container", min: 4.5 },
+  "on-tertiary-container/tertiary-container": { cls: "container", min: 4.5 },
+  "on-error-container/error-container": { cls: "container", min: 4.5 },
+  "on-primary/primary": { cls: "fill-label", min: 3 },
+  "on-secondary/secondary": { cls: "fill-label", min: 3 },
+  "on-tertiary/tertiary": { cls: "fill-label", min: 3 },
+  "on-error/error": { cls: "fill-label", min: 3 },
 };
-const APCA_UI_MIN = 30; // non-text UI / graphic edges (kind:"ui")
-const apcaRows = [];
+const WCAGX_UI_MIN = 3; // non-text UI / graphic edges (kind:"ui")
+const wcagxRows = [];
 for (const seed of args.seeds) {
   const { schemes: s } = generateTokens(seed);
   for (const mode of ["light", "dark"]) {
@@ -491,42 +482,36 @@ for (const seed of args.seeds) {
     for (const { fg, bg, kind } of SEMANTIC_PAIRS) {
       if (scheme[fg] == null || scheme[bg] == null) continue;
       const key = `${fg}/${bg}`;
-      const role = kind === "ui" ? { cls: "non-text-ui", min: APCA_UI_MIN } : APCA_ROLE[key];
+      const role = kind === "ui" ? { cls: "non-text-ui", min: WCAGX_UI_MIN } : WCAGX_ROLE[key];
       if (!role) continue;
-      const Lc = apcaLc(scheme[fg], scheme[bg]);
-      const absLc = Math.abs(Lc);
-      apcaRows.push({
+      const ratio = contrastRatio(scheme[fg], scheme[bg]);
+      wcagxRows.push({
         seed, mode, pair: key, cls: role.cls,
-        Lc: Math.round(Lc * 10) / 10, absLc: Math.round(absLc * 10) / 10,
-        min: role.min, pass: absLc >= role.min,
-        fluent90: role.fluent90 ? absLc >= 90 : undefined,
+        ratio: Math.round(ratio * 100) / 100, min: role.min, pass: ratio >= role.min,
       });
     }
   }
 }
-const apcaFails = apcaRows.filter((r) => !r.pass);
-const apcaFluentMiss = apcaRows.filter((r) => r.fluent90 === false);
+const wcagxFails = wcagxRows.filter((r) => !r.pass);
 dimensions.push({
-  dimension: "A1b-apca",
+  dimension: "A1b-wcag-enhanced",
   advisory: true,
-  verdict: apcaFails.length === 0 ? "PASS" : "FAIL",
-  rationale: apcaFails.length === 0
-    ? `all ${apcaRows.length} semantic pairs meet their role-appropriate APCA Lc minimum (body>=75, supporting/container>=60, fill/large>=45, non-text>=30) across ${args.seeds.length} seeds x2 modes`
-    : `${apcaFails.length} pair(s) below their APCA Lc minimum (advisory only; WCAG 2.2 AA gate is D2)`,
+  verdict: wcagxFails.length === 0 ? "PASS" : "FAIL",
+  rationale: wcagxFails.length === 0
+    ? `all ${wcagxRows.length} semantic pairs meet their role-appropriate WCAG 2.x enhanced minimum (body>=7, supporting/container>=4.5, fill-label/non-text>=3) across ${args.seeds.length} seeds x2 modes`
+    : `${wcagxFails.length} pair(s) below their enhanced WCAG 2.x minimum (advisory only; WCAG 2.2 AA gate is D2)`,
   measurements: {
-    metric: "APCA Lc (APCA-W3 0.1.9; qa/lib/apca.mjs, cross-validated vs apca-w3)",
-    thresholds: { body: 75, supporting: 60, container: 60, "fill-label": 45, "non-text-ui": 30, "fluent-body-informational": 90 },
-    pairsChecked: apcaRows.length,
-    rows: apcaRows,
-    fluent90MissesOnPrimaryBody: apcaFluentMiss.map((r) => ({ seed: r.seed, mode: r.mode, pair: r.pair, Lc: r.absLc })),
+    metric: "WCAG 2.x relative-luminance contrast ratio (colorjs.io WCAG21), role-tier minimums",
+    thresholds: { body: 7, supporting: 4.5, container: 4.5, "fill-label": 3, "non-text-ui": 3 },
+    pairsChecked: wcagxRows.length,
+    rows: wcagxRows,
   },
-  tags: ["[E]-metric", "DRAFT"],
-  caveats: ["APCA-draft: additional screen only, never replaces the normative WCAG 2.2 AA gate (D2)"],
+  tags: ["[E]-metric"],
+  caveats: ["additional stricter screen only; never replaces the normative WCAG 2.2 AA gate (D2)"],
 });
-log(`A1b APCA (ADVISORY, non-gating): ${apcaFails.length === 0 ? "PASS" : "FAIL"} ` +
-    `(${apcaRows.length} pairs; ${apcaFails.length} below role min; ${apcaFluentMiss.length} primary-body pairs under the informational fluent-90 tier)`);
-for (const r of apcaFails) log(`   - below-min ${r.seed} ${r.mode} ${r.pair} = Lc ${r.absLc} < ${r.min} (${r.cls})`);
-for (const r of apcaFluentMiss) log(`   - fluent-90 info: ${r.seed} ${r.mode} ${r.pair} = Lc ${r.absLc} (< 90 fluent tier; >= 75 body min OK)`);
+log(`A1b WCAG-enhanced (ADVISORY, non-gating): ${wcagxFails.length === 0 ? "PASS" : "FAIL"} ` +
+    `(${wcagxRows.length} pairs; ${wcagxFails.length} below role min)`);
+for (const r of wcagxFails) log(`   - below-min ${r.seed} ${r.mode} ${r.pair} = ${r.ratio}:1 < ${r.min}:1 (${r.cls})`);
 
 // --- DET1: determinism (same seed -> byte-identical tokens + mark) -----------
 // C-DET / DET1 [E]: re-generate each seed twice and hash the canonical DTCG
