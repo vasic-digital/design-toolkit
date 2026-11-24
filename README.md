@@ -184,3 +184,7 @@ design-toolkit/
   (§11.4.170 / §11.4.168) via the `design-qa-auditor` agent + Chrome DevTools / Playwright MCP.
 
 Full provenance: [`_analysis/design-research/CATALOG.md`](../_analysis/design-research/CATALOG.md).
+
+## Licence
+
+Source-available, all rights reserved. See [LICENSE](LICENSE), [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md). Gate: `bash scripts/verify_licence.sh` (`--prove-failure` for its paired proof).
