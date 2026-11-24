@@ -23,7 +23,7 @@ agent should reason with* → an **authored** cheat-sheet of rules (never copied
 | [`motion.md`](motion.md) | MD3 motion tokens, easings table, reduced-motion gate | M3 Motion (open), easings.net (MIT), MDN |
 | [`material3.md`](material3.md) | M3 color roles, tonal palette, type scale, layout classes | Material Design 3 (Apache-2.0 / CC-BY-4.0) |
 | [`dtcg-tokens.md`](dtcg-tokens.md) | DTCG token document shape the generator emits | Design Tokens Community Group spec (open) |
-| [`uniqueness-engine.md`](uniqueness-engine.md) | Parametric uniqueness pipeline: seed→DNA→blue-noise→guardrails→DTCG; variance metrics; [E]/[H] tags | DTCG, MCU, Utopia, CIEDE2000, CAM16-UCS, Bridson, APCA |
+| [`uniqueness-engine.md`](uniqueness-engine.md) | Parametric uniqueness pipeline: seed→DNA→blue-noise→guardrails→DTCG; variance metrics; [E]/[H] tags | DTCG, MCU, Utopia, CIEDE2000, CAM16-UCS, Bridson |
 
 ## Platform cheat-sheets (`platforms/`)
 Per-platform design language, key metrics (targets/type/spacing/safe-areas), a11y, canonical source

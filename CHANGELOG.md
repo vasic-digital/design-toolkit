@@ -5,6 +5,11 @@ constitution hub canon tag `helixconstitution-vNN`. Before this file existed the
 history lived only in `git log`; entries below start at v0.2.3 and summarise
 `v0.2.2..HEAD` (14 commits, 2026-08-07 .. 2026-09-15).
 
+## [Unreleased]
+
+### Removed
+- Dependency `@adobe/leonardo-contrast-colors` (unused) and with it `apca-w3` ("Limited W3 License") and `colorparsley` (AGPL-3.0); `qa/lib/apca.mjs` deleted. The advisory A1b screen is now WCAG 2.x enhanced-tier contrast. Lockfile regenerated; `generators/test/no-restricted-licences.test.mjs` guards it. Operator decision 2026-11-24.
+
 ## [0.2.3] - 2026-10-27
 
 Range `v0.2.2` (1ffcd55) .. `4ddc964`. The hub canon tag `helixconstitution-v70`

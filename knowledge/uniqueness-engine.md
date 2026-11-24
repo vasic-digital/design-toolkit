@@ -68,9 +68,9 @@ separation gate (§4) and the artifact recorded for reproducibility.
 
 ## 5. Guardrails (project every candidate into the feasible region)
 
-- **Contrast dual-gate: WCAG AA + APCA [E, w/ caveat].** Every text/UI pair must pass **WCAG 2.2 AA**
-  (4.5:1 / 3:1) **and** APCA. **Caveat: APCA is a DRAFT (WCAG 3 / not normative)** — use it as an
-  *additional* screen, never as a replacement for the normative WCAG AA gate. Sources:
+- **Contrast gate: WCAG 2.2 AA [E].** Every text/UI pair must pass **WCAG 2.2 AA** (4.5:1 / 3:1);
+  an advisory enhanced-tier screen (7 / 4.5 / 3) runs on top. APCA was removed 2026-11-24 (the
+  `apca-w3` licence does not clearly permit reuse) and is not used. Sources:
   https://www.w3.org/TR/WCAG22/ · APCA https://git.apcacontrast.com/ .
 - **Type guardrail [H]** — enforce min body size (per target platform, see `platforms/*`), min line
   length/height, cap ratio extremes.
@@ -92,7 +92,7 @@ separation gate (§4) and the artifact recorded for reproducibility.
 | Hue pre-filter reject window | Δh | < ~15° ⇒ candidate suspect | [H] |
 | DNA separation (blue-noise) | weighted DNA distance | ≥ r (Poisson-disk radius) | [E] method, [H] r |
 | Contrast (normative) | WCAG 2.2 | ≥ 4.5:1 / 3:1 | [E] |
-| Contrast (secondary screen) | APCA Lc | per APCA font-size table | [E] metric, DRAFT caveat |
+| Contrast (secondary screen) | WCAG 2.x ratio | 7 / 4.5 / 3 role tiers | [E] metric, advisory |
 
 *All numeric thresholds marked [H] are tunable defaults, not standards — record the values used in
 provenance.*
@@ -109,5 +109,5 @@ provenance.*
 - **CAM16-UCS (ΔE′)** — Li et al. (2017), CIE color-appearance uniform color space.
 - **Bridson blue-noise / Poisson-disk** — Bridson (2007), SIGGRAPH sketch (with capacity-limit
   caveat, §4).
-- **APCA** — Advanced Perceptual Contrast Algorithm, https://git.apcacontrast.com/ — **DRAFT, WCAG 3,
-  non-normative** (dual-gate caveat, §5).
+- **APCA** — Advanced Perceptual Contrast Algorithm — **not used** (DRAFT, WCAG 3; reference
+  package licence use-restricted; removed 2026-11-24, see §5).
